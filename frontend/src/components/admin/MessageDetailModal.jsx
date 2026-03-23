@@ -1,3 +1,10 @@
+// File: MessageDetailModal.jsx
+// Purpose: Detailed view of a single message.
+// Overview:
+// - Shows full content + metadata
+// File: MessageDetailModal.jsx
+// Purpose: React component for Tesla ChatBot UI.
+
 const MessageDetailModal = ({ message, onClose, onFilterLanguage }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-6">
     <div className="max-w-xl w-full rounded-3xl border border-white/10 bg-carbon p-6">
@@ -33,3 +40,7 @@ const MessageDetailModal = ({ message, onClose, onFilterLanguage }) => (
 );
 
 export default MessageDetailModal;
+
+
+
+

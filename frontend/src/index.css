@@ -1,3 +1,12 @@
+// File: index.css
+// Purpose: Global styles and Tailwind layers.
+// Overview:
+// - Fonts
+// - Scrollbar styles
+// - App background
+/* File: index.css
+   Purpose: Global styles for Tesla ChatBot UI. */
+
 @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap");
 
 @tailwind base;
@@ -31,3 +40,7 @@ body {
   background: rgba(227, 25, 55, 0.6);
   border-radius: 999px;
 }
+
+
+
+

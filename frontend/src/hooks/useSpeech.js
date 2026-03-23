@@ -1,3 +1,11 @@
+// File: useSpeech.js
+// Purpose: Speech synthesis hook.
+// Overview:
+// - Speaks assistant replies
+// - Stops speech when needed
+// File: useSpeech.js
+// Purpose: Project module for Tesla ChatBot.
+
 import { useCallback } from "react";
 import { formatNumberForSpeech } from "../lib/format";
 
@@ -22,3 +30,7 @@ export const useSpeech = (enabled) => {
 
   return { speak, stop };
 };
+
+
+
+

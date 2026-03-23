@@ -1,3 +1,12 @@
+# File: pdf_store.py
+# Purpose: Load and extract text from Tesla PDF documents.
+# Overview:
+# - Reads PDF files from backend/pdfs
+# - Extracts text per page
+# - Returns combined corpus
+# File: pdf_store.py
+# Purpose: Project module for Tesla ChatBot.
+
 import os
 from typing import List
 
@@ -5,6 +14,7 @@ import fitz  # PyMuPDF
 
 
 def load_pdf_text(pdf_folder: str) -> str:
+    # Return empty if folder is missing to keep service running
     if not os.path.isdir(pdf_folder):
         return ""
 
@@ -22,3 +32,7 @@ def load_pdf_text(pdf_folder: str) -> str:
             continue
 
     return "\n".join(chunks)
+
+
+
+

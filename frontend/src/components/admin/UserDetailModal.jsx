@@ -1,3 +1,11 @@
+// File: UserDetailModal.jsx
+// Purpose: Detailed view of a user.
+// Overview:
+// - Shows message history
+// - Quick navigation to messages
+// File: UserDetailModal.jsx
+// Purpose: React component for Tesla ChatBot UI.
+
 const UserDetailModal = ({ user, messages, onClose, onViewMessage }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-6">
     <div className="max-w-2xl w-full rounded-3xl border border-white/10 bg-carbon p-6">
@@ -43,3 +51,7 @@ const UserDetailModal = ({ user, messages, onClose, onViewMessage }) => (
 );
 
 export default UserDetailModal;
+
+
+
+

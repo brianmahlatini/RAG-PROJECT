@@ -1,4 +1,22 @@
-const AdminUsersTable = ({ users, searchTerm, onSearchTerm, onViewUser, onExport }) => (
+// File: AdminUsersTable.jsx
+// Purpose: Users table with pagination.
+// Overview:
+// - Shows user activity
+// - Quick view action
+// File: AdminUsersTable.jsx
+// Purpose: React component for Tesla ChatBot UI.
+
+const AdminUsersTable = ({
+  users,
+  searchTerm,
+  onSearchTerm,
+  onViewUser,
+  onExport,
+  page,
+  pageSize,
+  total,
+  onPageChange,
+}) => (
   <div className="space-y-4">
     <div className="flex flex-wrap items-center gap-3">
       <input
@@ -16,6 +34,30 @@ const AdminUsersTable = ({ users, searchTerm, onSearchTerm, onViewUser, onExport
       </button>
     </div>
 
+    <div className="flex flex-wrap items-center justify-between text-xs text-fog">
+      <span>
+        Page {page} of {Math.max(1, Math.ceil(total / pageSize))}
+      </span>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => onPageChange(Math.max(1, page - 1))}
+          className="rounded-full border border-white/10 px-3 py-1"
+          disabled={page <= 1}
+        >
+          Prev
+        </button>
+        <button
+          type="button"
+          onClick={() => onPageChange(page + 1)}
+          className="rounded-full border border-white/10 px-3 py-1"
+          disabled={page >= Math.ceil(total / pageSize)}
+        >
+          Next
+        </button>
+      </div>
+    </div>
+
     <div className="overflow-x-auto rounded-2xl border border-white/10">
       <table className="min-w-full text-sm">
         <thead className="bg-obsidian/70 text-fog">
@@ -29,6 +71,13 @@ const AdminUsersTable = ({ users, searchTerm, onSearchTerm, onViewUser, onExport
           </tr>
         </thead>
         <tbody>
+          {users.length === 0 && (
+            <tr>
+              <td colSpan={6} className="px-4 py-6 text-center text-fog">
+                No users found.
+              </td>
+            </tr>
+          )}
           {users.map((user) => (
             <tr key={user.ip} className="border-t border-white/10 hover:bg-obsidian/40">
               <td className="px-4 py-3">{user.ip}</td>
@@ -65,3 +114,7 @@ const AdminUsersTable = ({ users, searchTerm, onSearchTerm, onViewUser, onExport
 );
 
 export default AdminUsersTable;
+
+
+
+

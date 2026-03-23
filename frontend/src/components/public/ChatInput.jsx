@@ -1,3 +1,12 @@
+// File: ChatInput.jsx
+// Purpose: Message input bar.
+// Overview:
+// - Language select
+// - Text input
+// - Voice controls
+// File: ChatInput.jsx
+// Purpose: React component for Tesla ChatBot UI.
+
 const ChatInput = ({
   input,
   inputRef,
@@ -21,6 +30,7 @@ const ChatInput = ({
 }) => (
   <div className="border-t border-white/10 bg-carbon/80 px-6 py-4 backdrop-blur">
     <div className="flex flex-col gap-4">
+      {/* Language selector */}
       <div className="flex items-center justify-between text-xs text-fog">
         <span>Language</span>
         <select
@@ -36,6 +46,7 @@ const ChatInput = ({
         </select>
       </div>
 
+      {/* Live voice transcription */ }
       {listening && (
         <div className="flex items-center justify-between rounded-2xl border border-ember/50 bg-obsidian/60 px-4 py-3 text-sm text-ion">
           <div className="flex items-center gap-3">
@@ -56,6 +67,7 @@ const ChatInput = ({
         </div>
       )}
 
+      {/* Message input + actions */}
       <div className="relative flex items-center gap-2 rounded-2xl border border-white/10 bg-graphite px-3 py-2">
         <button
           type="button"
@@ -149,3 +161,7 @@ const ChatInput = ({
 );
 
 export default ChatInput;
+
+
+
+

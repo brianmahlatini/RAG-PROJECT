@@ -1,15 +1,34 @@
 # Tesla ChatBot
 
-Tesla ChatBot is a bilingual (English + German) assistant that answers questions using Tesla PDF documents and general Tesla knowledge. The app provides a public chat UI with English-only voice input and a full admin dashboard for monitoring and exporting conversations.
+Tesla ChatBot is a bilingual (English + German) AI assistant built for Tesla document Q&A. It answers questions using Tesla PDFs first, then general Tesla knowledge if needed. The project includes a public chat interface, an admin dashboard with analytics and exports, and enterprise features such as role-based access, audit logs, and rate limiting.
 
-This README documents the architecture, folder layout, how the system works end-to-end, and the exact steps to run it locally or in Docker.
+This README explains the full architecture, the flow of data, how to run the system, and how every folder is organized so any new developer can onboard quickly.
 
 ## Tech Stack
 
 - Frontend: React + Vite + Tailwind CSS
-- Backend: FastAPI + SQLite + OpenAI ChatCompletion
-- PDF ingestion: PyMuPDF
+- Charts: Chart.js + react-chartjs-2
+- Backend: FastAPI + SQLite
+- LLM: OpenAI ChatCompletion
+- Retrieval: TF-IDF (with optional FAISS acceleration)
+- PDF parsing: PyMuPDF
 - Containers: Docker (frontend + backend)
+
+## High-Level Flow
+
+1. Backend loads and parses all PDFs in `backend/pdfs/` at startup.
+2. A retriever is built from the PDF text to locate relevant sections for a user query.
+3. User messages are sent to `/chat` with a `language` query parameter.
+4. The assistant replies in English first, then translates to German if needed.
+5. All messages are stored in SQLite for admin analytics and export.
+6. Admin panel uses token-based access and supports audit exports and CSV/JSON data export.
+
+## Supported Languages
+
+- English
+- German
+
+Voice input is English-only.
 
 ## Project Structure
 
@@ -19,18 +38,25 @@ backend/
     core/
       config.py
       database.py
+      logging_config.py
       pdf_store.py
+      rate_limit.py
     routes/
       admin.py
       chat.py
     services/
+      admin_auth.py
+      audit.py
       chat_service.py
+      retriever.py
       translator.py
     schemas.py
     main.py
   pdfs/
   .env
+  .env.example
   chat_data.db
+  chat_logs.db
   Dockerfile
   requirements.txt
   main.py
@@ -44,6 +70,7 @@ frontend/
     App.jsx
     main.jsx
     index.css
+  .env.example
   index.html
   Dockerfile
   package.json
@@ -53,32 +80,15 @@ frontend/
 README.md
 ```
 
-## System Overview
+## Backend Details
 
-1. The backend loads every PDF in `backend/pdfs/` at startup and keeps a combined text version in memory.
-2. User questions are sent to `/chat` with a `language` query parameter.
-3. The assistant answers in English using Tesla docs plus general Tesla knowledge.
-4. If the user selected German, the English answer is translated before returning.
-5. All messages are stored in `backend/chat_data.db` and visible in the admin dashboard.
+### Main Services
 
-## Supported Languages
-
-- English
-- German
-
-Voice input is available only in English.
-
-## Backend Architecture
-
-The backend is a structured FastAPI app with clear separation of concerns:
-
-- `app/core/config.py`: Environment config (OpenAI key, admin password, languages).
-- `app/core/database.py`: SQLite initialization and shared connection.
-- `app/core/pdf_store.py`: PDF ingestion and text extraction.
-- `app/services/chat_service.py`: Prompt construction and response generation.
-- `app/services/translator.py`: OpenAI translation for German responses.
-- `app/routes/chat.py`: Public chat endpoint.
-- `app/routes/admin.py`: Admin endpoints for login, data export, and stats.
+- **Chat Service**: Builds the LLM prompt using retrieved Tesla content and user input.
+- **Translator**: Translates English responses to German.
+- **Retriever**: TF-IDF search over Tesla PDFs with optional FAISS acceleration.
+- **Audit Logging**: Records admin logins and access actions.
+- **Rate Limiting**: Limits chat usage per IP to protect stability.
 
 ### Key Endpoints
 
@@ -87,28 +97,50 @@ The backend is a structured FastAPI app with clear separation of concerns:
 - `GET /admin/messages`
 - `GET /admin/users`
 - `GET /admin/export/messages`
+- `GET /admin/export/messages-json`
 - `GET /admin/export/users`
+- `GET /admin/audit`
+- `GET /admin/export/audit`
 
-## Frontend Architecture
+### Admin Roles
 
-The frontend is a Vite-based React app with component separation:
+- **Admin**: Full access, audit export, database fixes.
+- **Viewer**: Read-only access to messages and users.
 
-- `components/public/`: public chat UI and messaging components
-- `components/admin/`: admin login, dashboard, analytics, and modals
-- `hooks/`: reusable hooks such as speech synthesis
-- `lib/`: constants and formatting utilities
+## Database
 
-The UI is built with Tailwind CSS and a Tesla-styled dark theme.
+SQLite is used for persistence. Tables include:
+
+- `messages`: all chat messages with role, content, language, timestamp, IP
+- `users`: basic user metadata (IP + policy if used)
+- `admin_audit`: admin login and action logs
+
+Database file: `backend/chat_data.db`
 
 ## Environment Variables
 
-Create a `.env` inside `backend/`:
+Create a `.env` inside `backend/` (or copy from `.env.example`):
 
 ```
 OPENAI_API_KEY=your_openai_key
+OPENAI_MODEL=gpt-3.5-turbo
+ADMIN_PASSWORD=KGA!@6247#0
+VIEWER_PASSWORD=
+ADMIN_TOKEN_TTL_MINUTES=120
+CORS_ALLOW_ORIGINS=*
+ENVIRONMENT=development
+REQUEST_TIMEOUT_SECONDS=30
+RATE_LIMIT_REQUESTS=30
+RATE_LIMIT_WINDOW_SECONDS=60
 ```
 
-## Run Locally (Recommended)
+Frontend env file (optional):
+
+```
+VITE_API_BASE_URL=http://localhost:8000
+```
+
+## Run Locally
 
 ### Backend
 
@@ -120,6 +152,16 @@ pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
 ```
 
+If PowerShell blocks scripts:
+
+```
+cd backend
+cmd /c python -m venv .venv
+cmd /c .\.venv\Scripts\activate
+cmd /c pip install -r requirements.txt
+cmd /c uvicorn main:app --reload --port 8000
+```
+
 ### Frontend
 
 ```
@@ -128,21 +170,20 @@ npm install
 npm run dev
 ```
 
+If PowerShell blocks scripts:
+
+```
+cd frontend
+cmd /c npm install
+cmd /c npm run dev
+```
+
 Open the app:
 
 - Public chat: `http://localhost:5173/`
 - Admin dashboard: `http://localhost:5173/admin`
 
-## Admin Credentials
-
-- Password: `KGA!@6247#0`
-
-## Update Tesla PDFs
-
-1. Add or replace PDFs in `backend/pdfs/`.
-2. Restart the backend to reload documents.
-
-## Docker (Production-Style Runs)
+## Docker
 
 ### Backend
 
@@ -160,25 +201,36 @@ docker build -t tesla-chatbot-frontend .
 docker run -p 5173:5173 tesla-chatbot-frontend
 ```
 
-## Notes on Tesla Knowledge
+## Admin Usage
 
-The assistant is optimized to answer using Tesla PDFs first. If a question is not covered in PDFs, it uses general Tesla knowledge and will be transparent if unsure. There is currently no live internet retrieval pipeline.
+1. Log in with Admin password for full access.
+2. Use Viewer password for read-only access.
+3. Export chats as CSV or JSON for training.
+4. Add or replace Tesla PDFs in `backend/pdfs/` and restart the backend.
 
-## Common Issues and Fixes
+## Training Data Export
 
-- **npm error: `vite` not recognized**
-  Run `npm install` first or use `cmd /c npm install` if PowerShell scripts are blocked.
+Use the admin Messages tab to export all chats for model training:
 
-- **PowerShell script execution blocked**
-  Run in cmd:
-  `cmd /c npm install`
-  `cmd /c npm run dev`
+- CSV export: `GET /admin/export/messages`
+- JSON export: `GET /admin/export/messages-json`
 
-- **Backend fails to start**
-  Ensure `OPENAI_API_KEY` is set in `backend/.env` and the virtual environment is activated.
+## Notes
 
-## Optional Enhancements
+- The assistant answers from Tesla documents first.
+- If Tesla PDFs do not cover a question, it responds from general Tesla knowledge and states uncertainty if needed.
+- For better accuracy, add more Tesla PDFs to `backend/pdfs/` and restart the backend.
 
-- Add a vector database for higher accuracy retrieval.
-- Add a document uploader in the admin panel.
-- Add streaming responses for faster UI feedback.
+## Senior-Level Checklist Implemented
+
+- Structured backend architecture (core/services/routes)
+- Configurable environment variables
+- Logging + health endpoint
+- Admin token-based auth
+- Rate limiting on `/chat`
+- Audit logs + export
+- Admin audit export
+- Pagination in admin UI
+- Real charts (Chart.js)
+- Docker support
+- Comprehensive documentation

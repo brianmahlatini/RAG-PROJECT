@@ -1,31 +1,42 @@
-﻿import { useEffect, useRef, useState } from "react";
+// File: ChatApp.jsx
+// Purpose: Public chat experience.
+// Overview:
+// - Manages chat messages and input
+// - Sends requests to backend
+// - Handles voice input + TTS
+// File: ChatApp.jsx
+// Purpose: React component for Tesla ChatBot UI.
+
+import { useEffect, useRef, useState } from "react";
 import ChatFooter from "./ChatFooter.jsx";
 import ChatHeader from "./ChatHeader.jsx";
 import ChatInput from "./ChatInput.jsx";
 import ChatMessages from "./ChatMessages.jsx";
 import { API_BASE_URL, DEFAULT_LANGUAGE, LANGUAGES } from "../../lib/constants";
+import { apiFetch } from "../../lib/api";
 import { useSpeech } from "../../hooks/useSpeech";
 
 const commonEmojis = [
-  "😊",
-  "😂",
-  "❤️",
-  "👍",
-  "🔥",
-  "🎉",
-  "🙏",
-  "😢",
-  "😍",
-  "🤔",
-  "👋",
-  "✅",
-  "⭐",
-  "💯",
-  "🔴",
-  "🟢",
+  "??",
+  "??",
+  "??",
+  "??",
+  "??",
+  "??",
+  "??",
+  "??",
+  "??",
+  "??",
+  "??",
+  "?",
+  "?",
+  "??",
+  "??",
+  "??",
 ];
 
 const ChatApp = () => {
+  // Core chat state
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [listening, setListening] = useState(false);
@@ -40,21 +51,24 @@ const ChatApp = () => {
   const inputRef = useRef(null);
   const emojiPickerRef = useRef(null);
 
-  const { speak, stop } = useSpeech(language === "english");
+  const { speak, stop } = useSpeech(language === "english"); // TTS only for English
 
   useEffect(() => {
+    // Keep chat scrolled to latest message
     if (chatboxRef.current) {
       chatboxRef.current.scrollTop = chatboxRef.current.scrollHeight;
     }
   }, [messages, typing]);
 
   useEffect(() => {
+    // Focus input on load
     if (inputRef.current) {
       inputRef.current.focus();
     }
   }, []);
 
   useEffect(() => {
+    // Close emoji picker on outside click
     const handleClickOutside = (event) => {
       if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target)) {
         setShowEmojiPicker(false);
@@ -64,7 +78,9 @@ const ChatApp = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Send a user message to backend and append assistant reply
   const handleSend = async (overrideText) => {
+    if (typing) return;
     const text = (overrideText ?? input).trim();
     if (!text) return;
 
@@ -74,13 +90,17 @@ const ChatApp = () => {
     setLiveTranscript("");
 
     try {
-      const response = await fetch(`${API_BASE_URL}/chat?language=${language}`,
+      const response = await apiFetch(`${API_BASE_URL}/chat?language=${language}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ message: text }),
-        }
+        },
+        { timeoutMs: 20000, retries: 1 }
       );
+      if (!response.ok) {
+        throw new Error("Chat request failed");
+      }
       const data = await response.json();
       setMessages((prev) => [
         ...prev,
@@ -100,6 +120,7 @@ const ChatApp = () => {
     }
   };
 
+  // Voice input is English-only (browser SpeechRecognition)
   const handleVoiceInput = () => {
     if (language !== "english") {
       alert("Voice input is only available in English.");
@@ -188,6 +209,7 @@ const ChatApp = () => {
     }
   };
 
+  // Manual stop for mic input
   const handleStopListening = () => {
     if (recognitionRef.current) {
       try {
@@ -200,11 +222,13 @@ const ChatApp = () => {
     setLiveTranscript("");
   };
 
+  // Clear chat UI + stop TTS
   const handleClear = () => {
     setMessages([]);
     stop();
   };
 
+  // Toggle citations panel for a single message
   const handleToggleCitation = (index) => {
     setShowCitations((prev) => ({
       ...prev,
@@ -252,3 +276,7 @@ const ChatApp = () => {
 };
 
 export default ChatApp;
+
+
+
+

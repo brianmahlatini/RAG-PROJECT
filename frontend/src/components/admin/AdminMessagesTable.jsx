@@ -1,3 +1,12 @@
+// File: AdminMessagesTable.jsx
+// Purpose: Messages table with filters and export.
+// Overview:
+// - Search + filter
+// - Pagination
+// - CSV/JSON export
+// File: AdminMessagesTable.jsx
+// Purpose: React component for Tesla ChatBot UI.
+
 const AdminMessagesTable = ({
   messages,
   languageFilter,
@@ -8,6 +17,10 @@ const AdminMessagesTable = ({
   onSearchTerm,
   onViewMessage,
   onExport,
+  page,
+  pageSize,
+  total,
+  onPageChange,
 }) => (
   <div className="space-y-4">
     <div className="flex flex-wrap items-center gap-3">
@@ -42,6 +55,37 @@ const AdminMessagesTable = ({
       >
         Export CSV
       </button>
+      <button
+        type="button"
+        onClick={() => onExport("messages-json")}
+        className="rounded-xl border border-white/10 px-4 py-2 text-sm text-fog hover:text-ion"
+      >
+        Export JSON (All Chats)
+      </button>
+    </div>
+
+    <div className="flex flex-wrap items-center justify-between text-xs text-fog">
+      <span>
+        Page {page} of {Math.max(1, Math.ceil(total / pageSize))}
+      </span>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => onPageChange(Math.max(1, page - 1))}
+          className="rounded-full border border-white/10 px-3 py-1"
+          disabled={page <= 1}
+        >
+          Prev
+        </button>
+        <button
+          type="button"
+          onClick={() => onPageChange(page + 1)}
+          className="rounded-full border border-white/10 px-3 py-1"
+          disabled={page >= Math.ceil(total / pageSize)}
+        >
+          Next
+        </button>
+      </div>
     </div>
 
     <div className="overflow-x-auto rounded-2xl border border-white/10">
@@ -58,6 +102,13 @@ const AdminMessagesTable = ({
           </tr>
         </thead>
         <tbody>
+          {messages.length === 0 && (
+            <tr>
+              <td colSpan={7} className="px-4 py-6 text-center text-fog">
+                No messages found.
+              </td>
+            </tr>
+          )}
           {messages.map((msg) => (
             <tr key={msg.id} className="border-t border-white/10 hover:bg-obsidian/40">
               <td className="px-4 py-3">{msg.id}</td>
@@ -84,3 +135,7 @@ const AdminMessagesTable = ({
 );
 
 export default AdminMessagesTable;
+
+
+
+

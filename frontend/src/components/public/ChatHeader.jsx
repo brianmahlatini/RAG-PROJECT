@@ -1,3 +1,11 @@
+// File: ChatHeader.jsx
+// Purpose: Chat header UI.
+// Overview:
+// - Brand title
+// - Status indicator
+// File: ChatHeader.jsx
+// Purpose: React component for Tesla ChatBot UI.
+
 const ChatHeader = ({ status }) => (
   <header className="flex items-center justify-between border-b border-white/10 bg-carbon/80 px-6 py-4 backdrop-blur">
     <div className="flex items-center gap-4">
@@ -17,3 +25,7 @@ const ChatHeader = ({ status }) => (
 );
 
 export default ChatHeader;
+
+
+
+

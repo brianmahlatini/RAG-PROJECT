@@ -1,26 +1,44 @@
+// File: AdminLogin.jsx
+// Purpose: Admin login form.
+// Overview:
+// - Submits password
+// - Stores admin token
+// File: AdminLogin.jsx
+// Purpose: React component for Tesla ChatBot UI.
+
 import { useState } from "react";
 import { API_BASE_URL } from "../../lib/constants";
+import { apiFetch } from "../../lib/api";
 
 const AdminLogin = ({ onSuccess }) => {
+  // Admin login state
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Authenticate using shared admin password
   const handleSubmit = async (event) => {
     event.preventDefault();
     setLoading(true);
     setError("");
 
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/login`, {
+      const response = await apiFetch(`${API_BASE_URL}/admin/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
-      });
+      }, { timeoutMs: 15000, retries: 0 });
 
       if (response.ok) {
-        onSuccess({ username: username || "Admin" });
+        const payload = await response.json();
+        const token = payload.token || "";
+        const role = payload.role || "viewer";
+        if (token) {
+          localStorage.setItem("adminToken", token);
+          localStorage.setItem("adminRole", role);
+        }
+        onSuccess({ username: username || "Admin", token, role });
       } else {
         setError("Invalid password. Use: KGA!@6247#0");
       }
@@ -81,3 +99,7 @@ const AdminLogin = ({ onSuccess }) => {
 };
 
 export default AdminLogin;
+
+
+
+

@@ -1,3 +1,11 @@
+// File: ChatMessages.jsx
+// Purpose: Chat history list.
+// Overview:
+// - Renders user/assistant bubbles
+// - Shows citations if present
+// File: ChatMessages.jsx
+// Purpose: React component for Tesla ChatBot UI.
+
 import { formatTime } from "../../lib/format";
 
 const ChatMessages = ({ messages, typing, chatboxRef, onToggleCitation, showCitations }) => (
@@ -58,3 +66,7 @@ const ChatMessages = ({ messages, typing, chatboxRef, onToggleCitation, showCita
 );
 
 export default ChatMessages;
+
+
+
+

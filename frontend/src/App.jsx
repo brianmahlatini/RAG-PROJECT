@@ -1,3 +1,11 @@
+// File: App.jsx
+// Purpose: Client router between public chat and admin dashboard.
+// Overview:
+// - Detects /admin path
+// - Handles admin auth state
+// File: App.jsx
+// Purpose: React component for Tesla ChatBot UI.
+
 import { useEffect, useState } from "react";
 import AdminDashboard from "./components/admin/AdminDashboard.jsx";
 import AdminLogin from "./components/admin/AdminLogin.jsx";
@@ -11,6 +19,8 @@ const isAdminPath = () => {
 const App = () => {
   const [adminMode, setAdminMode] = useState(isAdminPath());
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [adminToken, setAdminToken] = useState(localStorage.getItem("adminToken") || "");
+  const [adminRole, setAdminRole] = useState(localStorage.getItem("adminRole") || "viewer");
 
   useEffect(() => {
     const handlePop = () => setAdminMode(isAdminPath());
@@ -20,9 +30,23 @@ const App = () => {
 
   if (adminMode) {
     return isAuthenticated ? (
-      <AdminDashboard onLogout={() => setIsAuthenticated(false)} />
+      <AdminDashboard
+        role={adminRole}
+        token={adminToken}
+        onLogout={() => {
+          localStorage.removeItem("adminToken");
+          localStorage.removeItem("adminRole");
+          setIsAuthenticated(false);
+        }}
+      />
     ) : (
-      <AdminLogin onSuccess={() => setIsAuthenticated(true)} />
+      <AdminLogin
+        onSuccess={({ token }) => {
+          if (token) setAdminToken(token);
+          setAdminRole(localStorage.getItem("adminRole") || "viewer");
+          setIsAuthenticated(true);
+        }}
+      />
     );
   }
 
@@ -30,3 +54,7 @@ const App = () => {
 };
 
 export default App;
+
+
+
+
