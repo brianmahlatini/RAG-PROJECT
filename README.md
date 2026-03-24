@@ -34,50 +34,50 @@ Voice input is English-only.
 
 ```
 backend/
-  app/
-    core/
-      config.py
-      database.py
-      logging_config.py
-      pdf_store.py
-      rate_limit.py
-    routes/
-      admin.py
-      chat.py
-    services/
-      admin_auth.py
-      audit.py
-      chat_service.py
-      retriever.py
-      translator.py
-    schemas.py
-    main.py
-  pdfs/
-  .env
-  .env.example
-  chat_data.db
-  chat_logs.db
-  Dockerfile
-  requirements.txt
-  main.py
+  app/                          # FastAPI application package
+    core/                       # Core shared utilities
+      config.py                 # Loads env vars and defines app settings
+      database.py               # SQLite init + shared connection helpers
+      logging_config.py         # Logging format and noise control
+      pdf_store.py              # PDF ingestion and text extraction
+      rate_limit.py             # IP-based rate limiting middleware
+    routes/                     # HTTP API endpoints
+      admin.py                  # Admin auth, exports, audit, fixes
+      chat.py                   # Public chat endpoint
+    services/                   # Business logic layer
+      admin_auth.py             # Admin token issuance/validation
+      audit.py                  # Admin action logging
+      chat_service.py           # Prompting, LLM calls, cleanup, translation
+      retriever.py              # TF-IDF retrieval + optional FAISS
+      translator.py             # Language translation via OpenAI
+    schemas.py                  # Pydantic request models
+    main.py                     # FastAPI app factory, startup hooks
+  pdfs/                         # Tesla PDF knowledge base
+  .env                          # Backend secrets and runtime config
+  .env.example                  # Example backend env file
+  chat_data.db                  # SQLite DB for chats/users/audit
+  chat_logs.db                  # Legacy or auxiliary logs DB
+  Dockerfile                    # Backend container build
+  requirements.txt              # Backend Python dependencies
+  main.py                       # Entrypoint wrapper for uvicorn
 frontend/
-  src/
-    components/
-      admin/
-      public/
-    hooks/
-    lib/
-    App.jsx
-    main.jsx
-    index.css
-  .env.example
-  index.html
-  Dockerfile
-  package.json
-  postcss.config.js
-  tailwind.config.js
-  vite.config.js
-README.md
+  src/                          # React source code
+    components/                 # UI components
+      admin/                    # Admin dashboard UI
+      public/                   # Public chat UI
+    hooks/                      # Custom React hooks (speech, etc.)
+    lib/                        # API helpers + shared constants
+    App.jsx                     # Root app component
+    main.jsx                    # React entry point
+    index.css                   # Global styles + Tailwind layers
+  .env.example                  # Example frontend env file
+  index.html                    # HTML shell for Vite
+  Dockerfile                    # Frontend container build
+  package.json                  # Frontend dependencies + scripts
+  postcss.config.cjs            # PostCSS setup for Tailwind
+  tailwind.config.js            # Tailwind theme config
+  vite.config.cjs               # Vite build/dev config
+README.md                       # Project documentation
 ```
 
 ## Backend Details
@@ -221,7 +221,7 @@ Use the admin Messages tab to export all chats for model training:
 - If Tesla PDFs do not cover a question, it responds from general Tesla knowledge and states uncertainty if needed.
 - For better accuracy, add more Tesla PDFs to `backend/pdfs/` and restart the backend.
 
-## Checklist Implemented
+## Senior-Level Checklist Implemented
 
 - Structured backend architecture (core/services/routes)
 - Configurable environment variables
