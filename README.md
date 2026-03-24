@@ -34,50 +34,50 @@ Voice input is English-only.
 
 ```
 backend/
-  app/                          # FastAPI application package that wires routing, services, and startup tasks together
-    core/                       # Cross-cutting utilities shared by all backend modules
-      config.py                 # Loads env vars so runtime behavior can be changed without code edits
-      database.py               # SQLite init + shared connection helpers to persist chats/admin data reliably
-      logging_config.py         # Consistent logs so errors are traceable in dev/prod
-      pdf_store.py              # PDF ingestion and text extraction to build the knowledge base for retrieval
-      rate_limit.py             # IP-based throttling to protect the /chat endpoint from abuse or overload
-    routes/                     # HTTP API endpoints exposed to the frontend/admin UI
-      admin.py                  # Admin auth, exports, audit, and maintenance actions
-      chat.py                   # Public chat endpoint that receives user prompts
-    services/                   # Business logic layer to keep routes thin and testable
-      admin_auth.py             # Token issuance/validation for admin access control
-      audit.py                  # Admin action logging for compliance and traceability
-      chat_service.py           # Prompt building + LLM calls + cleanup + translation pipeline
-      retriever.py              # TF-IDF retrieval (+ optional FAISS) to find relevant PDF chunks
-      translator.py             # Language translation via OpenAI for bilingual responses
-    schemas.py                  # Pydantic models so requests are validated consistently
-    main.py                     # FastAPI app factory + startup hooks (DB init, retriever build)
-  pdfs/                         # Tesla PDF knowledge base; this is where domain content is loaded from
-  .env                          # Backend secrets/runtime config (never commit real secrets)
-  .env.example                  # Safe template showing required env vars
-  chat_data.db                  # Primary SQLite DB for chats/users/audit; supports analytics + exports
-  chat_logs.db                  # Legacy or auxiliary logs DB (kept for backward compatibility)
-  Dockerfile                    # Backend container build for consistent deployment
-  requirements.txt              # Backend Python dependencies for reproducible installs
-  main.py                       # Entrypoint wrapper for running uvicorn
+  app/                          # FastAPI application package
+    core/                       # Core shared utilities
+      config.py                 # Loads env vars and defines app settings
+      database.py               # SQLite init + shared connection helpers
+      logging_config.py         # Logging format and noise control
+      pdf_store.py              # PDF ingestion and text extraction
+      rate_limit.py             # IP-based rate limiting middleware
+    routes/                     # HTTP API endpoints
+      admin.py                  # Admin auth, exports, audit, fixes
+      chat.py                   # Public chat endpoint
+    services/                   # Business logic layer
+      admin_auth.py             # Admin token issuance/validation
+      audit.py                  # Admin action logging
+      chat_service.py           # Prompting, LLM calls, cleanup, translation
+      retriever.py              # TF-IDF retrieval + optional FAISS
+      translator.py             # Language translation via OpenAI
+    schemas.py                  # Pydantic request models
+    main.py                     # FastAPI app factory, startup hooks
+  pdfs/                         # Tesla PDF knowledge base
+  .env                          # Backend secrets and runtime config
+  .env.example                  # Example backend env file
+  chat_data.db                  # SQLite DB for chats/users/audit
+  chat_logs.db                  # Legacy or auxiliary logs DB
+  Dockerfile                    # Backend container build
+  requirements.txt              # Backend Python dependencies
+  main.py                       # Entrypoint wrapper for uvicorn
 frontend/
-  src/                          # React source code for the UI
-    components/                 # Reusable UI components to keep screens modular
-      admin/                    # Admin dashboard UI (analytics, tables, exports)
-      public/                   # Public chat UI (messages, input, voice, emoji)
-    hooks/                      # Custom React hooks to share behavior (e.g., speech)
-    lib/                        # Shared helpers and constants (API calls, formatting)
-    App.jsx                     # Root app component that wires routes/layouts
-    main.jsx                    # React entry point that mounts the app
-    index.css                   # Global styles + Tailwind layers + emoji font fallback
-  .env.example                  # Example frontend env vars (API base URL)
-  index.html                    # HTML shell Vite injects the bundle into
-  Dockerfile                    # Frontend container build for deployment
-  package.json                  # Frontend dependencies + scripts (dev/build)
-  postcss.config.cjs            # PostCSS setup for Tailwind processing
-  tailwind.config.js            # Tailwind theme config (colors, fonts, utilities)
+  src/                          # React source code
+    components/                 # UI components
+      admin/                    # Admin dashboard UI
+      public/                   # Public chat UI
+    hooks/                      # Custom React hooks (speech, etc.)
+    lib/                        # API helpers + shared constants
+    App.jsx                     # Root app component
+    main.jsx                    # React entry point
+    index.css                   # Global styles + Tailwind layers
+  .env.example                  # Example frontend env file
+  index.html                    # HTML shell for Vite
+  Dockerfile                    # Frontend container build
+  package.json                  # Frontend dependencies + scripts
+  postcss.config.cjs            # PostCSS setup for Tailwind
+  tailwind.config.js            # Tailwind theme config
   vite.config.cjs               # Vite build/dev config
-README.md                       # Project documentation and onboarding guide
+README.md                       # Project documentation
 ```
 
 ## Backend Details
@@ -221,7 +221,7 @@ Use the admin Messages tab to export all chats for model training:
 - If Tesla PDFs do not cover a question, it responds from general Tesla knowledge and states uncertainty if needed.
 - For better accuracy, add more Tesla PDFs to `backend/pdfs/` and restart the backend.
 
-## Checklist Implemented
+## Senior-Level Checklist Implemented
 
 - Structured backend architecture (core/services/routes)
 - Configurable environment variables
