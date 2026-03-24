@@ -1,4 +1,13 @@
 # Tesla ChatBot
+“I built a production-ready AI chatbot for Tesla document Q&A. It’s designed to answer user questions using PDFs first, and then fallback to general knowledge if needed.
+
+The backend is FastAPI, structured with a clean service-based architecture — separating core modules, services, and routes — to keep the system maintainable and scalable. It includes a retriever pipeline using TF-IDF, optional FAISS acceleration, and a translator so it supports both English and German.
+
+The frontend is React with a modern UI and an admin dashboard, where I implemented role-based access control, audit logging, data exports, and analytics charts. I also added rate limiting and environment-based configs to make it production-ready.
+
+I dockerized both the frontend and backend, so it can run reliably in any environment. Essentially, this system demonstrates end-to-end engineering: from architecture and AI integrations to deployment, monitoring, and admin operations.
+
+If I had more time, I would enhance it further with vector databases for faster retrieval and streaming responses, but even now it’s fully functional and built to scale.”
 
 Tesla ChatBot is a bilingual (English + German) AI assistant built for Tesla document Q&A. It answers questions using Tesla PDFs first, then general Tesla knowledge if needed. The project includes a public chat interface, an admin dashboard with analytics and exports, and enterprise features such as role-based access, audit logs, and rate limiting.
 
