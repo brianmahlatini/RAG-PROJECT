@@ -221,7 +221,7 @@ Use the admin Messages tab to export all chats for model training:
 - If Tesla PDFs do not cover a question, it responds from general Tesla knowledge and states uncertainty if needed.
 - For better accuracy, add more Tesla PDFs to `backend/pdfs/` and restart the backend.
 
-## Senior-Level Checklist Implemented
+## Checklist Implemented
 
 - Structured backend architecture (core/services/routes)
 - Configurable environment variables
