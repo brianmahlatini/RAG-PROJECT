@@ -3,9 +3,6 @@
 // Overview:
 // - Detects /admin path
 // - Handles admin auth state
-// File: App.jsx
-// Purpose: React component for Tesla ChatBot UI.
-
 import { useEffect, useState } from "react";
 import AdminDashboard from "./components/admin/AdminDashboard.jsx";
 import AdminLogin from "./components/admin/AdminLogin.jsx";
@@ -54,6 +51,7 @@ const App = () => {
 };
 
 export default App;
+
 
 
 

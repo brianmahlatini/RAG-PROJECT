@@ -1,3 +1,5 @@
+# pyright: reportMissingImports=false, reportMissingTypeStubs=false
+# pyright: reportUnknownVariableType=false, reportUnknownMemberType=false
 # File: chat_service.py
 # Purpose: Core chat logic.
 # Overview:
@@ -5,9 +7,6 @@
 # - Calls OpenAI for response
 # - Applies greeting rules and translation
 # - Stores messages in DB
-# File: chat_service.py
-# Purpose: Project module for Tesla ChatBot.
-
 from datetime import datetime
 from typing import Tuple
 
@@ -15,8 +14,6 @@ import openai
 
 from app.core.config import DEFAULT_LANGUAGE, OPENAI_MODEL, SUPPORTED_LANGUAGES
 from app.services.translator import translate_text
-
-
 
 
 def normalize_language(language: str) -> str:
@@ -27,11 +24,12 @@ def normalize_language(language: str) -> str:
     return selected
 
 
-def generate_reply(prompt: str, pdf_text: str, retrieved_chunks: list[str]) -> str:
+def generate_reply(
+    prompt: str, pdf_text: str, retrieved_chunks: list[str]
+) -> str:
     # Primary LLM call: combine system prompt + PDF corpus + user prompt
-    context = pdf_text
-    if retrieved_chunks:
-        context = "\n\n".join(retrieved_chunks)
+    # Only include retrieved chunks to keep prompts small and focused
+    context = "\n\n".join(retrieved_chunks) if retrieved_chunks else ""
     response = openai.ChatCompletion.create(
         model=OPENAI_MODEL,
         messages=[
@@ -39,11 +37,17 @@ def generate_reply(prompt: str, pdf_text: str, retrieved_chunks: list[str]) -> s
                 "role": "system",
                 "content": (
                     "You are Tesla ChatBot, Tesla's official assistant. "
-                    "Answer all questions clearly, confidently, and professionally as if you are speaking on behalf of Tesla. "
-                    "Use the Tesla document text provided below to answer questions about Tesla products, services, policies, and support. "
-                    "If a question is not covered in the documents, answer from general Tesla knowledge and be transparent if you are unsure. "
-                    "Do not mention visiting websites or calling support; provide direct, clear answers. "
-                    "Do not greet or welcome the user; answer the question immediately."
+                    "Answer all questions clearly, confidently, and "
+                    "professionally as if you are speaking on behalf of "
+                    "Tesla. Use the Tesla document text provided below "
+                    "to answer questions about Tesla products, services, "
+                    "policies, and support. If a question is not covered "
+                    "in the documents, answer from general Tesla knowledge "
+                    "and be transparent if you are unsure. Do not mention "
+                    "visiting websites or calling support; provide direct, "
+                    "clear answers. Respond in plain text only. Do not use "
+                    "markdown, asterisks, or bold formatting. Do not greet "
+                    "or welcome the user; answer the question immediately."
                 ),
             },
             {"role": "system", "content": context or ""},
@@ -51,83 +55,46 @@ def generate_reply(prompt: str, pdf_text: str, retrieved_chunks: list[str]) -> s
         ],
         temperature=0.3,
     )
-    return response["choices"][0]["message"]["content"].strip()
 
+    reply = response["choices"][0]["message"]["content"].strip()
 
-def strip_greeting(reply: str) -> str:
-    lowered = reply.strip().lower()
-    greeting_phrases = [
-        "hello! welcome to tesla chatbot",
-        "hello! welcome to tesla chat bot",
-        "hello! welcome",
-        "hello",
-        "hi",
-        "good morning",
-        "good afternoon",
-        "good evening",
-        "welcome to tesla chatbot",
+    sentences = [
+        s.strip()
+        for s in reply.replace("!", ".").split(".")
+        if s.strip()
     ]
-    # Remove any sentence that contains greeting phrases
-    sentences = [s.strip() for s in reply.replace("!", ".").split(".") if s.strip()]
-    filtered = []
-    for sentence in sentences:
-        s_lower = sentence.lower()
-        if any(phrase in s_lower for phrase in greeting_phrases):
-            continue
-        filtered.append(sentence)
-    if not filtered:
+
+    if not sentences:
         return reply
-    return ". ".join(filtered).strip()
+
+    if len(sentences) > 5:
+        truncated = " ".join(sentences[:5]) + "."
+        return truncated
+
+    return reply
 
 
-def is_simple_greeting(text: str) -> bool:
-    cleaned = text.strip().lower()
-    if not cleaned:
-        return False
-    greeting_set = {
-        "hi",
-        "hie",
-        "hello",
-        "hey",
-        "good morning",
-        "good afternoon",
-        "good evening",
-    }
-    if cleaned in greeting_set:
-        return True
-    # Allow greeting with punctuation only
-    if cleaned.rstrip("!.") in greeting_set:
-        return True
-    # If it is just a greeting with 1-2 words, treat it as greeting
-    if len(cleaned.split()) <= 2 and any(g in cleaned for g in greeting_set):
-        return True
-    return False
+def apply_greeting(prompt: str, reply: str) -> str:
+    keywords_greeting = ["hello", "hi", "hey", "greetings", "good morning"]
+    if any(kw in prompt.lower() for kw in keywords_greeting):
+        greeting = "Hello! I'm Tesla ChatBot. "
+        if reply.lower().startswith(greeting.lower()):
+            return reply
+        return greeting + reply
+    return reply
 
 
 def handle_chat(
-    prompt: str,
-    language: str,
-    pdf_text: str,
-    retrieved_chunks: list[str],
+    prompt: str, language: str, pdf_text: str, retrieved_chunks: list[str]
 ) -> Tuple[str, str]:
-    # Route a chat request: greeting shortcut + LLM response + optional translation
+    # Route a chat request: greeting shortcut + LLM response +
+    # optional translation
+    reply = generate_reply(prompt, pdf_text, retrieved_chunks)
+    reply = apply_greeting(prompt, reply)
     selected_language = normalize_language(language)
 
-    if is_simple_greeting(prompt):
-        base_reply = "Hello! How can I help you with Tesla today?"
-        reply = (
-            translate_text(base_reply, selected_language)
-            if selected_language != "english"
-            else base_reply
-        )
-        return reply, selected_language
-
-    english_reply = generate_reply(prompt, pdf_text, retrieved_chunks)
-    english_reply = strip_greeting(english_reply)
     if selected_language != "english":
-        reply = translate_text(english_reply, selected_language)
-    else:
-        reply = english_reply
+        reply = translate_text(reply, selected_language)
 
     return reply, selected_language
 
@@ -135,20 +102,16 @@ def handle_chat(
 def log_message(
     cursor,
     conn,
-    *,
     ip: str,
     role: str,
     content: str,
     language: str,
     timestamp: datetime,
 ) -> None:
-    # Persist a single message into SQLite
     cursor.execute(
-        "INSERT INTO messages (ip, role, content, timestamp, language) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO messages "
+        "(ip, role, content, timestamp, language) "
+        "VALUES (?, ?, ?, ?, ?)",
         (ip, role, content, timestamp.isoformat(), language),
     )
     conn.commit()
-
-
-
-

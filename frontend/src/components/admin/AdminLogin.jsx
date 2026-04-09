@@ -3,9 +3,6 @@
 // Overview:
 // - Submits password
 // - Stores admin token
-// File: AdminLogin.jsx
-// Purpose: React component for Tesla ChatBot UI.
-
 import { useState } from "react";
 import { API_BASE_URL } from "../../lib/constants";
 import { apiFetch } from "../../lib/api";
@@ -99,6 +96,7 @@ const AdminLogin = ({ onSuccess }) => {
 };
 
 export default AdminLogin;
+
 
 
 

@@ -1,12 +1,11 @@
+# pyright: reportMissingImports=false, reportMissingTypeStubs=false
+# pyright: reportUnknownVariableType=false, reportUnknownMemberType=false
 # File: config.py
 # Purpose: Centralized environment configuration for Tesla ChatBot.
 # Overview:
 # - Loads environment variables
 # - Defines app settings (model, languages, rate limits)
 # - Exposes constants for other modules
-# File: config.py
-# Purpose: Project module for Tesla ChatBot.
-
 from dotenv import load_dotenv
 import os
 
@@ -36,8 +35,6 @@ CORS_ALLOW_ORIGINS = os.getenv("CORS_ALLOW_ORIGINS", "*").split(",")
 REQUEST_TIMEOUT_SECONDS = int(os.getenv("REQUEST_TIMEOUT_SECONDS", "30"))
 
 RATE_LIMIT_REQUESTS = int(os.getenv("RATE_LIMIT_REQUESTS", "30"))
-RATE_LIMIT_WINDOW_SECONDS = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60"))
-
-
-
-
+RATE_LIMIT_WINDOW_SECONDS = int(
+    os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60")
+)

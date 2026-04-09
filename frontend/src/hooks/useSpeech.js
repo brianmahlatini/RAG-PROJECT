@@ -3,9 +3,6 @@
 // Overview:
 // - Speaks assistant replies
 // - Stops speech when needed
-// File: useSpeech.js
-// Purpose: Project module for Tesla ChatBot.
-
 import { useCallback } from "react";
 import { formatNumberForSpeech } from "../lib/format";
 
@@ -17,7 +14,8 @@ export const useSpeech = (enabled) => {
       const formatted = formatNumberForSpeech(text);
       const utterance = new SpeechSynthesisUtterance(formatted);
       utterance.lang = "en-US";
-      utterance.rate = 0.9;
+      // Faster, clearer delivery
+      utterance.rate = 1.15;
       utterance.pitch = 1;
       window.speechSynthesis.speak(utterance);
     },
@@ -30,6 +28,7 @@ export const useSpeech = (enabled) => {
 
   return { speak, stop };
 };
+
 
 
 

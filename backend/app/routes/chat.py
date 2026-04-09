@@ -1,12 +1,11 @@
+# pyright: reportMissingImports=false, reportMissingTypeStubs=false
+# pyright: reportUnknownVariableType=false, reportUnknownMemberType=false
 # File: chat.py
 # Purpose: Public chat API route.
 # Overview:
 # - Validates language
 # - Logs user and assistant messages
 # - Returns assistant reply
-# File: chat.py
-# Purpose: Project module for Tesla ChatBot.
-
 from datetime import datetime
 
 from fastapi import APIRouter, Query, Request
@@ -14,15 +13,23 @@ from fastapi import APIRouter, Query, Request
 from app.core.config import DEFAULT_LANGUAGE
 from app.core.database import get_db
 from app.schemas import MessageIn
-from app.services.chat_service import handle_chat, log_message, normalize_language
+from app.services.chat_service import (
+    handle_chat,
+    log_message,
+    normalize_language,
+)
 from app.services.retriever import retrieve_chunks
 
 router = APIRouter()
 
 
 @router.post("/chat")
-async def chat(request: Request, msg: MessageIn, language: str = Query(DEFAULT_LANGUAGE)):
-    client_ip = request.client.host
+async def chat(
+    request: Request,
+    msg: MessageIn,
+    language: str = Query(DEFAULT_LANGUAGE),
+):
+    client_ip = request.client.host if request.client else "unknown"
     now = datetime.now()
 
     prompt = msg.message.strip()
@@ -56,7 +63,12 @@ async def chat(request: Request, msg: MessageIn, language: str = Query(DEFAULT_L
             retriever["index"],
             top_k=4,
         )
-        reply, selected_language = handle_chat(prompt, selected_language, pdf_text, retrieved_chunks)
+        (
+            reply,
+            selected_language,
+        ) = handle_chat(
+            prompt, selected_language, pdf_text, retrieved_chunks
+        )
 
         log_message(
             cursor,
@@ -84,7 +96,3 @@ async def chat(request: Request, msg: MessageIn, language: str = Query(DEFAULT_L
             pass
 
     return {"reply": reply, "language": selected_language}
-
-
-
-

@@ -1,11 +1,10 @@
+# pyright: reportMissingImports=false, reportMissingTypeStubs=false
+# pyright: reportUnknownVariableType=false, reportUnknownMemberType=false
 # File: logging_config.py
 # Purpose: Standard logging configuration used across the backend.
 # Overview:
 # - Sets log level based on ENVIRONMENT
 # - Sends logs to stdout
-# File: logging_config.py
-# Purpose: Project module for Tesla ChatBot.
-
 import logging
 import sys
 
@@ -19,7 +18,6 @@ def configure_logging() -> None:
         format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
         handlers=[logging.StreamHandler(sys.stdout)],
     )
-
-
-
-
+    # Silence noisy libraries in development
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
+    logging.getLogger("openai").setLevel(logging.WARNING)

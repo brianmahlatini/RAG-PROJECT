@@ -2,9 +2,6 @@
 // Purpose: Footer info strip.
 // Overview:
 // - Displays app status and notes
-// File: ChatFooter.jsx
-// Purpose: React component for Tesla ChatBot UI.
-
 const ChatFooter = () => (
   <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 bg-carbon/70 px-6 py-3 text-xs text-fog">
     <span>Tesla ChatBot</span>
@@ -14,6 +11,7 @@ const ChatFooter = () => (
 );
 
 export default ChatFooter;
+
 
 
 

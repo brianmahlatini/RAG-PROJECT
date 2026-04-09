@@ -1,12 +1,11 @@
+# pyright: reportMissingImports=false, reportMissingTypeStubs=false
+# pyright: reportUnknownVariableType=false, reportUnknownMemberType=false
 # File: pdf_store.py
 # Purpose: Load and extract text from Tesla PDF documents.
 # Overview:
 # - Reads PDF files from backend/pdfs
 # - Extracts text per page
 # - Returns combined corpus
-# File: pdf_store.py
-# Purpose: Project module for Tesla ChatBot.
-
 import os
 from typing import List
 
@@ -32,7 +31,3 @@ def load_pdf_text(pdf_folder: str) -> str:
             continue
 
     return "\n".join(chunks)
-
-
-
-

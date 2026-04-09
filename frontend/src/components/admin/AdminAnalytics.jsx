@@ -3,9 +3,6 @@
 // Overview:
 // - Language mix donut chart
 // - Usage line chart
-// File: AdminAnalytics.jsx
-// Purpose: React component for Tesla ChatBot UI.
-
 import {
   Chart as ChartJS,
   ArcElement,
@@ -183,6 +180,7 @@ const AdminAnalytics = ({ languageStats, messages, users, onViewUser }) => {
 };
 
 export default AdminAnalytics;
+
 
 
 

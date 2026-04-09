@@ -3,9 +3,6 @@
 // Overview:
 // - Adds timeout support
 // - Optional retry logic
-// File: api.js
-// Purpose: Project module for Tesla ChatBot.
-
 export const apiFetch = async (url, options = {}, { timeoutMs = 15000, retries = 1 } = {}) => {
   const attempt = async () => {
     const controller = new AbortController();
@@ -32,6 +29,7 @@ export const apiFetch = async (url, options = {}, { timeoutMs = 15000, retries =
 
   throw lastError;
 };
+
 
 
 

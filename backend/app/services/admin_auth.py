@@ -1,12 +1,11 @@
+# pyright: reportMissingImports=false, reportMissingTypeStubs=false
+# pyright: reportUnknownVariableType=false, reportUnknownMemberType=false
 # File: admin_auth.py
 # Purpose: In-memory admin token issuance and validation.
 # Overview:
 # - Issues role-scoped tokens
 # - Validates token expiry
 # - Retrieves role for access control
-# File: admin_auth.py
-# Purpose: Project module for Tesla ChatBot.
-
 import secrets
 from datetime import datetime, timedelta
 from typing import Dict, Tuple
@@ -18,7 +17,9 @@ _tokens: Dict[str, Tuple[datetime, str]] = {}
 
 def issue_token(role: str) -> str:
     token = secrets.token_urlsafe(32)
-    expires_at = datetime.utcnow() + timedelta(minutes=ADMIN_TOKEN_TTL_MINUTES)
+    expires_at = datetime.utcnow() + timedelta(
+        minutes=ADMIN_TOKEN_TTL_MINUTES
+    )
     _tokens[token] = (expires_at, role)
     return token
 
@@ -46,7 +47,3 @@ def get_role(token: str) -> str:
         return ""
     _expires_at, role = record
     return role
-
-
-
-

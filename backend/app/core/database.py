@@ -1,12 +1,11 @@
+# pyright: reportMissingImports=false, reportMissingTypeStubs=false
+# pyright: reportUnknownVariableType=false, reportUnknownMemberType=false
 # File: database.py
 # Purpose: SQLite initialization and shared connection handling.
 # Overview:
 # - Creates tables if missing
 # - Normalizes legacy language values
 # - Provides a single shared connection/cursor
-# File: database.py
-# Purpose: Project module for Tesla ChatBot.
-
 import sqlite3
 from typing import Tuple
 
@@ -68,14 +67,8 @@ def init_db() -> Tuple[sqlite3.Connection, sqlite3.Cursor]:
     )
     _conn.commit()
 
-    return _conn, _cursor
-
 
 def get_db() -> Tuple[sqlite3.Connection, sqlite3.Cursor]:
     if not _conn or not _cursor:
         return init_db()
     return _conn, _cursor
-
-
-
-

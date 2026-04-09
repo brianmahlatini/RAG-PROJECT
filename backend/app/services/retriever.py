@@ -1,12 +1,11 @@
+# pyright: reportMissingImports=false, reportMissingTypeStubs=false
+# pyright: reportUnknownVariableType=false, reportUnknownMemberType=false
 # File: retriever.py
 # Purpose: Lightweight retrieval over Tesla docs.
 # Overview:
 # - Splits text into chunks
 # - Uses TF-IDF (optional) for matching
 # - Returns top relevant chunks
-# File: retriever.py
-# Purpose: Project module for Tesla ChatBot.
-
 from typing import List, Tuple
 
 # NOTE: Imports are intentionally lazy to avoid hard failures
@@ -18,7 +17,9 @@ except Exception:
     faiss = None
 
 
-def chunk_text(text: str, chunk_size: int = 1200, overlap: int = 200) -> List[str]:
+def chunk_text(
+    text: str, chunk_size: int = 1200, overlap: int = 200
+) -> List[str]:
     if not text:
         return []
     cleaned = " ".join(text.split())
@@ -36,7 +37,9 @@ def chunk_text(text: str, chunk_size: int = 1200, overlap: int = 200) -> List[st
 def build_retriever(text: str) -> Tuple[List[str], object, object, object]:
     try:
         import numpy as np  # type: ignore
-        from sklearn.feature_extraction.text import TfidfVectorizer  # type: ignore
+        from sklearn.feature_extraction.text import (  # type: ignore
+            TfidfVectorizer,
+        )
     except Exception:
         # Missing optional dependencies; return empty retriever
         return [], None, None, None
@@ -79,7 +82,3 @@ def retrieve_chunks(
     scores = (matrix * query_vec.T).toarray().ravel()
     top_indices = scores.argsort()[-top_k:][::-1]
     return [chunks[i] for i in top_indices if scores[i] > 0]
-
-
-
-

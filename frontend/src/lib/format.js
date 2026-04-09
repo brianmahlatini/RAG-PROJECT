@@ -3,9 +3,6 @@
 // Overview:
 // - Number-to-words
 // - Time formatting
-// File: format.js
-// Purpose: Project module for Tesla ChatBot.
-
 export const numberToWords = (num) => {
   if (num === 1000) return "one thousand";
   if (num === 2000) return "two thousand";
@@ -81,6 +78,7 @@ export const formatNumberForSpeech = (text) => {
 
 export const formatTime = (date) =>
   new Date(date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
 
 
 

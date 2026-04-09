@@ -4,9 +4,6 @@
 // - Manages chat messages and input
 // - Sends requests to backend
 // - Handles voice input + TTS
-// File: ChatApp.jsx
-// Purpose: React component for Tesla ChatBot UI.
-
 import { useEffect, useRef, useState } from "react";
 import ChatFooter from "./ChatFooter.jsx";
 import ChatHeader from "./ChatHeader.jsx";
@@ -17,22 +14,35 @@ import { apiFetch } from "../../lib/api";
 import { useSpeech } from "../../hooks/useSpeech";
 
 const commonEmojis = [
-  "??",
-  "??",
-  "??",
-  "??",
-  "??",
-  "??",
-  "??",
-  "??",
-  "??",
-  "??",
-  "??",
-  "?",
-  "?",
-  "??",
-  "??",
-  "??",
+  "😀",
+  "😃",
+  "😄",
+  "😁",
+  "😆",
+  "😅",
+  "😂",
+  "🤣",
+  "😊",
+  "😍",
+  "😘",
+  "😎",
+  "🤩",
+  "🤔",
+  "😴",
+  "😇",
+  "🥳",
+  "😤",
+  "😱",
+  "😢",
+  "😭",
+  "😡",
+  "👍",
+  "👎",
+  "👏",
+  "🙏",
+  "🔥",
+  "💡",
+  "🚗",
 ];
 
 const ChatApp = () => {
@@ -45,6 +55,7 @@ const ChatApp = () => {
   const [liveTranscript, setLiveTranscript] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showCitations, setShowCitations] = useState({});
+  const [voiceError, setVoiceError] = useState("");
 
   const chatboxRef = useRef(null);
   const recognitionRef = useRef(null);
@@ -123,12 +134,17 @@ const ChatApp = () => {
   // Voice input is English-only (browser SpeechRecognition)
   const handleVoiceInput = () => {
     if (language !== "english") {
-      alert("Voice input is only available in English.");
+      setVoiceError("Voice input is only available in English.");
       return;
     }
 
     if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
-      alert("Speech recognition is not supported in your browser.");
+      setVoiceError("Speech recognition is not supported. Use Chrome or Edge.");
+      return;
+    }
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setVoiceError("Microphone access is not supported in this browser.");
       return;
     }
 
@@ -138,75 +154,103 @@ const ChatApp = () => {
 
     recognition.continuous = false;
     recognition.interimResults = true;
-    recognition.maxAlternatives = 3;
+    recognition.maxAlternatives = 5;
     recognition.lang = "en-US";
 
     let finalTranscript = "";
     let recognitionTimeout;
     let sent = false;
 
-    setListening(true);
-    setLiveTranscript("Listening...");
+    const computeSilenceMs = (text) => {
+      const words = text.trim().split(/\s+/).filter(Boolean).length;
+      if (words >= 10) return 550; // fast send for long speech
+      if (words >= 5) return 800;
+      return 1400; // slower speakers get more time
+    };
 
-    recognition.onresult = (event) => {
-      if (recognitionTimeout) clearTimeout(recognitionTimeout);
+    const startRecognition = () => {
+      setListening(true);
+      setLiveTranscript("Listening...");
+      setVoiceError("");
 
-      let interimTranscript = "";
-      let currentFinalTranscript = "";
+      recognition.onresult = (event) => {
+        if (recognitionTimeout) clearTimeout(recognitionTimeout);
 
-      for (let i = event.resultIndex; i < event.results.length; i += 1) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          currentFinalTranscript += transcript;
-          finalTranscript = currentFinalTranscript;
-        } else {
-          interimTranscript += transcript;
+        let interimTranscript = "";
+        let currentFinalTranscript = "";
+
+        for (let i = event.resultIndex; i < event.results.length; i += 1) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            currentFinalTranscript += ` ${transcript}`;
+            finalTranscript = currentFinalTranscript.trim();
+          } else {
+            interimTranscript += transcript;
+          }
         }
-      }
 
-      if (interimTranscript) {
-        setLiveTranscript(interimTranscript);
-      }
+        if (interimTranscript) {
+          setLiveTranscript(interimTranscript);
+        }
 
-      recognitionTimeout = setTimeout(() => {
-        if (finalTranscript && !sent) {
+        recognitionTimeout = setTimeout(() => {
+          if (finalTranscript && !sent) {
+            sent = true;
+            setListening(false);
+            setLiveTranscript("");
+            handleSend(finalTranscript);
+          }
+        }, computeSilenceMs(finalTranscript || interimTranscript));
+      };
+
+      recognition.onerror = (event) => {
+        let errorMessage = "Voice recognition failed. Please try again.";
+        if (event.error === "no-speech") errorMessage = "No speech detected. Tap the mic and speak again.";
+        if (event.error === "audio-capture") errorMessage = "No microphone found. Check your mic and try again.";
+        if (event.error === "not-allowed") errorMessage = "Microphone access denied. Allow mic permission and retry.";
+        if (event.error === "network") errorMessage = "Network error. Check your connection and retry.";
+        if (event.error === "service-not-allowed") errorMessage = "Speech service blocked. Try Chrome or Edge.";
+
+        setVoiceError((prev) => (prev === errorMessage ? prev : errorMessage));
+        setListening(false);
+        setLiveTranscript("");
+      };
+
+      recognition.onend = () => {
+        if (finalTranscript && finalTranscript.trim() && !sent) {
           sent = true;
-          setListening(false);
-          setLiveTranscript("");
           handleSend(finalTranscript);
         }
-      }, 800);
-    };
+        setListening(false);
+        setLiveTranscript("");
+        if (recognitionTimeout) clearTimeout(recognitionTimeout);
+      };
 
-    recognition.onerror = (event) => {
-      let errorMessage = "Voice recognition failed. Please try again.";
-      if (event.error === "no-speech") errorMessage = "No speech detected. Please try again.";
-      if (event.error === "audio-capture") errorMessage = "No microphone found.";
-      if (event.error === "not-allowed") errorMessage = "Microphone access denied.";
-      if (event.error === "network") errorMessage = "Network error. Please check your connection.";
-
-      alert(errorMessage);
-      setListening(false);
-      setLiveTranscript("");
-    };
-
-    recognition.onend = () => {
-      if (finalTranscript && finalTranscript.trim() && !sent) {
-        sent = true;
-        handleSend(finalTranscript);
+      try {
+        recognition.start();
+      } catch (error) {
+        setVoiceError((prev) =>
+          prev === "Failed to start voice recognition. Reload the page and try again."
+            ? prev
+            : "Failed to start voice recognition. Reload the page and try again."
+        );
+        setListening(false);
+        setLiveTranscript("");
       }
-      setListening(false);
-      setLiveTranscript("");
-      if (recognitionTimeout) clearTimeout(recognitionTimeout);
     };
 
-    try {
-      recognition.start();
-    } catch (error) {
-      alert("Failed to start voice recognition.");
-      setListening(false);
-      setLiveTranscript("");
-    }
+    navigator.mediaDevices
+      .getUserMedia({ audio: true })
+      .then((stream) => {
+        // Stop tracks immediately; we only need permission warm-up
+        stream.getTracks().forEach((track) => track.stop());
+        startRecognition();
+      })
+      .catch(() => {
+        setVoiceError("Microphone permission blocked. Allow mic access and refresh.");
+        setListening(false);
+        setLiveTranscript("");
+      });
   };
 
   // Manual stop for mic input
@@ -239,6 +283,11 @@ const ChatApp = () => {
   return (
     <div className="flex min-h-screen flex-col">
       <ChatHeader status={listening ? "Listening" : typing ? "Thinking" : "Online"} />
+      {voiceError && (
+        <div className="mx-6 mt-4 rounded-2xl border border-ember/40 bg-ember/10 px-4 py-3 text-sm text-amber-100">
+          {voiceError} To fix: click the lock icon in the address bar, set Microphone to Allow, then refresh.
+        </div>
+      )}
       <ChatMessages
         messages={messages}
         typing={typing}
@@ -276,6 +325,9 @@ const ChatApp = () => {
 };
 
 export default ChatApp;
+
+
+
 
 
 

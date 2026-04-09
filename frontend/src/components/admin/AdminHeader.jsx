@@ -3,9 +3,6 @@
 // Overview:
 // - Back to chat button
 // - Logout
-// File: AdminHeader.jsx
-// Purpose: React component for Tesla ChatBot UI.
-
 const AdminHeader = ({ onLogout, onSwitchToChat }) => (
   <header className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-carbon/80 px-6 py-4">
     <div>
@@ -32,6 +29,7 @@ const AdminHeader = ({ onLogout, onSwitchToChat }) => (
 );
 
 export default AdminHeader;
+
 
 
 

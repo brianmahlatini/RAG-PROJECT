@@ -1,14 +1,13 @@
+# pyright: reportMissingImports=false, reportMissingTypeStubs=false
+# pyright: reportUnknownVariableType=false, reportUnknownMemberType=false
 # File: rate_limit.py
 # Purpose: Simple IP-based rate limiting middleware for /chat.
 # Overview:
 # - Tracks requests per IP
 # - Enforces request limits per time window
 # - Returns 429 on limit exceed
-# File: rate_limit.py
-# Purpose: Project module for Tesla ChatBot.
-
 from datetime import datetime
-from typing import Dict
+from typing import Awaitable, Callable, Dict, List
 
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -20,13 +19,14 @@ from app.core.config import RATE_LIMIT_REQUESTS, RATE_LIMIT_WINDOW_SECONDS
 class RateLimitMiddleware(BaseHTTPMiddleware):
     def __init__(self, app):
         super().__init__(app)
-        self.hits: Dict[str, list[datetime]] = {}
+        self.hits: Dict[str, List[datetime]] = {}
 
-    async def dispatch(self, request: Request, call_next):
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable]
+    ):
         # Only rate limit chat endpoint
         if request.url.path != "/chat":
             return await call_next(request)
-
         ip = request.client.host if request.client else "unknown"
         now = datetime.utcnow()
 
@@ -44,7 +44,3 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.hits[ip] = history
 
         return await call_next(request)
-
-
-
-

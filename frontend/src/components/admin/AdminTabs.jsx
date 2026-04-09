@@ -2,9 +2,6 @@
 // Purpose: Admin tab switcher.
 // Overview:
 // - Messages / Users / Analytics
-// File: AdminTabs.jsx
-// Purpose: React component for Tesla ChatBot UI.
-
 const tabs = [
   { id: "messages", label: "Messages" },
   { id: "users", label: "Users" },
@@ -31,6 +28,7 @@ const AdminTabs = ({ activeTab, onChange }) => (
 );
 
 export default AdminTabs;
+
 
 
 

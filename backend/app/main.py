@@ -1,18 +1,22 @@
+# pyright: reportMissingImports=false, reportMissingTypeStubs=false
+# pyright: reportUnknownVariableType=false, reportUnknownMemberType=false
 # File: main.py
 # Purpose: FastAPI app factory and startup hooks.
 # Overview:
 # - CORS + middleware
 # - Startup: DB init + PDF load
 # - Routers mounted
-# File: main.py
-# Purpose: Project module for Tesla ChatBot.
-
 import openai
 from fastapi.responses import JSONResponse
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.core.config import CORS_ALLOW_ORIGINS, OPENAI_API_KEY, PDF_FOLDER, PROJECT_NAME
+from app.core.config import (
+    CORS_ALLOW_ORIGINS,
+    OPENAI_API_KEY,
+    PDF_FOLDER,
+    PROJECT_NAME,
+)
 from app.core.database import init_db
 from app.core.logging_config import configure_logging
 from app.core.pdf_store import load_pdf_text
@@ -20,7 +24,7 @@ from app.core.rate_limit import RateLimitMiddleware
 from app.routes import admin, chat
 from app.services.retriever import build_retriever
 
-openai.api_key = OPENAI_API_KEY  # OpenAI key used by chat + translation services
+openai.api_key = OPENAI_API_KEY
 
 app = FastAPI(title=PROJECT_NAME)
 app.add_middleware(RateLimitMiddleware)
@@ -53,7 +57,9 @@ def startup():
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request, exc: Exception):
     # Prevent unhandled exceptions from leaking stack traces to clients
-    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+    return JSONResponse(
+        status_code=500, content={"detail": "Internal server error"}
+    )
 
 
 @app.get("/health")
@@ -63,7 +69,3 @@ def health():
 
 app.include_router(chat.router)
 app.include_router(admin.router)
-
-
-
-
