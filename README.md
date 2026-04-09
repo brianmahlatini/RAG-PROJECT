@@ -1,248 +1,431 @@
-# Tesla ChatBot
+# Tesla ChatBot - Document Q&A System
 
-## Tesla ChatBot Project Pitch — Words To Say
+A production-ready, multilingual AI assistant for automated document retrieval and question-answering. The system leverages advanced retrieval-augmented generation (RAG) techniques combined with OpenAI's language models to provide accurate, contextual responses from Tesla documentation.
 
-"I built a production-ready AI chatbot for Tesla document Q&A. It answers using Tesla PDFs first, and falls back to general knowledge if needed.
+## Executive Summary
 
-The backend is FastAPI, structured with a clean service-based architecture - separating core modules, services, and routes - to keep the system maintainable and scalable. It includes a retriever pipeline using TF-IDF, optional FAISS acceleration, and a translator so it supports both English and German.
+Tesla ChatBot is an enterprise-grade AI solution that combines:
 
-The frontend is React with a modern UI and an admin dashboard, where I implemented role-based access control, audit logging, data exports, and analytics charts. I also added rate limiting and environment-based configs to make it production-ready.
+- **Advanced Retrieval**: TF-IDF vectorization with optional FAISS acceleration for rapid document searches
+- **Multilingual Support**: Native English and German language support with seamless translation
+- **Production Architecture**: Microservice-based backend with comprehensive monitoring and audit trails
+- **Admin Dashboard**: Role-based access control with analytics, data exports, and system auditing
+- **Enterprise Security**: Token-based authentication, rate limiting, IP-based access controls, and comprehensive audit logging
 
-I dockerized both the frontend and backend, so it can run reliably in any environment. Essentially, this system demonstrates end-to-end engineering: from architecture and AI integrations to deployment, monitoring, and admin operations.
+## Technology Stack
 
-If I had more time, I would enhance it further with vector databases for faster retrieval and streaming responses, but even now it's fully functional and built to scale."
+| Component | Technology |
+|-----------|-----------|
+| **Frontend** | React 18 + Vite + Tailwind CSS |
+| **Backend** | FastAPI 0.115 + Uvicorn |
+| **Database** | SQLite 3 |
+| **LLM Integration** | OpenAI ChatCompletion API |
+| **Vector Search** | TF-IDF (scikit-learn) with optional FAISS |
+| **PDF Processing** | PyMuPDF (fitz) |
+| **Containerization** | Docker |
+| **Analytics** | Chart.js + react-chartjs-2 |
 
-This README explains the architecture, data flow, setup, and folder structure so new developers can onboard quickly.
+## System Architecture
 
-This README explains the full architecture, the flow of data, how to run the system, and how every folder is organized so any new developer can onboard quickly.
+### High-Level Data Flow
 
-## Tech Stack
+```
+1. User Query
+    ↓
+2. PDF Retrieval (TF-IDF/FAISS)
+    ↓
+3. Context Building
+    ↓
+4. OpenAI Chat Completion
+    ↓
+5. Language Translation (if needed)
+    ↓
+6. Database Logging & Audit
+    ↓
+7. Response to User
+```
 
-- Frontend: React + Vite + Tailwind CSS
-- Charts: Chart.js + react-chartjs-2
-- Backend: FastAPI + SQLite
-- LLM: OpenAI ChatCompletion
-- Retrieval: TF-IDF (with optional FAISS acceleration)
-- PDF parsing: PyMuPDF
-- Containers: Docker (frontend + backend)
+### Backend Architecture
 
-## High-Level Flow
+The backend follows a layered, service-oriented architecture:
 
-1. Backend loads and parses all PDFs in `backend/pdfs/` at startup.
-2. A retriever is built from the PDF text to locate relevant sections for a user query.
-3. User messages are sent to `/chat` with a `language` query parameter.
-4. The assistant replies in English first, then translates to German if needed.
-5. All messages are stored in SQLite for admin analytics and export.
-6. Admin panel uses token-based access and supports audit exports and CSV/JSON data export.
-
-## Supported Languages
-
-- English
-- German
-
-Voice input is English-only.
+```
+app/
+├── core/                    # Cross-cutting concerns
+│   ├── config.py           # Environment configuration
+│   ├── database.py         # SQLite connection management
+│   ├── logging_config.py   # Structured logging
+│   ├── pdf_store.py        # PDF ingestion pipeline
+│   └── rate_limit.py       # Request throttling middleware
+├── routes/                 # HTTP API endpoints
+│   ├── chat.py            # Public Q&A endpoint
+│   └── admin.py           # Admin operations (auth, exports)
+├── services/              # Business logic layer
+│   ├── chat_service.py    # Chat orchestration
+│   ├── retriever.py       # Document retrieval engine
+│   ├── translator.py      # Multilingual translation
+│   ├── admin_auth.py      # Token-based authentication
+│   └── audit.py           # Audit logging
+├── schemas.py             # Pydantic validation models
+└── main.py                # FastAPI application factory
+```
 
 ## Project Structure
 
 ```
-backend/
-  app/                          # FastAPI application package that wires routing, services, and startup tasks together
-    core/                       # Cross-cutting utilities shared by all backend modules
-      config.py                 # Loads env vars so runtime behavior can be changed without code edits
-      database.py               # SQLite init + shared connection helpers to persist chats/admin data reliably
-      logging_config.py         # Consistent logs so errors are traceable in dev/prod
-      pdf_store.py              # PDF ingestion and text extraction to build the knowledge base for retrieval
-      rate_limit.py             # IP-based throttling to protect the /chat endpoint from abuse or overload
-    routes/                     # HTTP API endpoints exposed to the frontend/admin UI
-      admin.py                  # Admin auth, exports, audit, and maintenance actions
-      chat.py                   # Public chat endpoint that receives user prompts
-    services/                   # Business logic layer to keep routes thin and testable
-      admin_auth.py             # Token issuance/validation for admin access control
-      audit.py                  # Admin action logging for compliance and traceability
-      chat_service.py           # Prompt building + LLM calls + cleanup + translation pipeline
-      retriever.py              # TF-IDF retrieval (+ optional FAISS) to find relevant PDF chunks
-      translator.py             # Language translation via OpenAI for bilingual responses
-    schemas.py                  # Pydantic models so requests are validated consistently
-    main.py                     # FastAPI app factory + startup hooks (DB init, retriever build)
-  pdfs/                         # Tesla PDF knowledge base; this is where domain content is loaded from
-  .env                          # Backend secrets/runtime config (never commit real secrets)
-  .env.example                  # Safe template showing required env vars
-  chat_data.db                  # Primary SQLite DB for chats/users/audit; supports analytics + exports
-  chat_logs.db                  # Legacy or auxiliary logs DB (kept for backward compatibility)
-  Dockerfile                    # Backend container build for consistent deployment
-  requirements.txt              # Backend Python dependencies for reproducible installs
-  main.py                       # Entrypoint wrapper for running uvicorn
-frontend/
-  src/                          # React source code for the UI
-    components/                 # Reusable UI components to keep screens modular
-      admin/                    # Admin dashboard UI (analytics, tables, exports)
-      public/                   # Public chat UI (messages, input, voice, emoji)
-    hooks/                      # Custom React hooks to share behavior (e.g., speech)
-    lib/                        # Shared helpers and constants (API calls, formatting)
-    App.jsx                     # Root app component that wires routes/layouts
-    main.jsx                    # React entry point that mounts the app
-    index.css                   # Global styles + Tailwind layers + emoji font fallback
-  .env.example                  # Example frontend env vars (API base URL)
-  index.html                    # HTML shell Vite injects the bundle into
-  Dockerfile                    # Frontend container build for deployment
-  package.json                  # Frontend dependencies + scripts (dev/build)
-  postcss.config.cjs            # PostCSS setup for Tailwind processing
-  tailwind.config.js            # Tailwind theme config (colors, fonts, utilities)
-  vite.config.cjs               # Vite build/dev config
-README.md                       # Project documentation and onboarding guide
+backend/                           # FastAPI backend application
+├── app/                          # Application package
+│   ├── core/                     # Infrastructure & configuration
+│   │   ├── config.py            # Environment variables & constants
+│   │   ├── database.py          # SQLite initialization & persistence
+│   │   ├── logging_config.py    # Logging configuration
+│   │   ├── pdf_store.py         # PDF text extraction
+│   │   └── rate_limit.py        # IP-based rate limiting
+│   ├── routes/                  # API endpoints
+│   │   ├── chat.py              # Public chat API
+│   │   └── admin.py             # Admin operations
+│   ├── services/                # Business logic
+│   │   ├── admin_auth.py        # Token management
+│   │   ├── audit.py             # Audit logging
+│   │   ├── chat_service.py      # Core chat logic
+│   │   ├── retriever.py         # PDF retrieval engine
+│   │   └── translator.py        # OpenAI translation
+│   ├── schemas.py               # Pydantic models
+│   └── main.py                  # FastAPI initialization
+├── pdfs/                        # Knowledge base (Tesla documents)
+├── Dockerfile                   # Container configuration
+├── requirements.txt             # Python dependencies
+├── main.py                      # Uvicorn entrypoint
+├── chat_data.db                 # SQLite database
+└── .env                         # Configuration (not committed)
+
+frontend/                        # React frontend application
+├── src/
+│   ├── components/
+│   │   ├── admin/              # Admin dashboard UI
+│   │   └── public/             # Public chat interface
+│   ├── hooks/                  # Custom React hooks
+│   ├── lib/                    # Utilities & API clients
+│   ├── App.jsx                 # Root component
+│   ├── main.jsx                # Entry point
+│   └── index.css               # Global styles
+├── Dockerfile                  # Container configuration
+├── package.json                # Node.js dependencies
+├── vite.config.cjs             # Vite build config
+├── tailwind.config.js          # Tailwind configuration
+└── index.html                  # HTML shell
 ```
 
-## Backend Details
+## Features
 
-### Main Services
+### Core Functionality
 
-- **Chat Service**: Builds the LLM prompt using retrieved Tesla content and user input.
-- **Translator**: Translates English responses to German.
-- **Retriever**: TF-IDF search over Tesla PDFs with optional FAISS acceleration.
-- **Audit Logging**: Records admin logins and access actions.
-- **Rate Limiting**: Limits chat usage per IP to protect stability.
+- **Document Q&A**: Retrieve answers from Tesla PDFs with context-aware LLM generation
+- **Multilingual Support**: Automatic translation between English and German
+- **Session Persistence**: Complete message history with metadata
+- **IP-Based Tracking**: User identification and analytics
 
-### Key Endpoints
+### Admin Dashboard
 
-- `POST /chat?language=english|german`
-- `POST /admin/login`
-- `GET /admin/messages`
-- `GET /admin/users`
-- `GET /admin/export/messages`
-- `GET /admin/export/messages-json`
-- `GET /admin/export/users`
-- `GET /admin/audit`
-- `GET /admin/export/audit`
+- **Authentication**: Password-protected admin access with token-based session management
+- **Message Analytics**: Searchable message history with language and timestamp filtering
+- **User Management**: Track unique users and their activity patterns
+- **Data Export**: CSV and JSON exports for compliance and data analysis
+- **Audit Logging**: Complete record of all admin actions
+- **System Monitoring**: Performance metrics and system health indicators
 
-### Admin Roles
+### Security & Performance
 
-- **Admin**: Full access, audit export, database fixes.
-- **Viewer**: Read-only access to messages and users.
+- **Rate Limiting**: IP-based request throttling (configurable per-window limits)
+- **CORS Configuration**: Environment-based cross-origin access control
+- **Token-Based Auth**: Secure, time-limited authentication tokens
+- **Database Auditing**: Immutable audit trail of administrative actions
+- **Optional FAISS Acceleration**: Enhanced vector search for large document sets
 
-## Database
+## API Endpoints
 
-SQLite is used for persistence. Tables include:
+### Public Chat
 
-- `messages`: all chat messages with role, content, language, timestamp, IP
-- `users`: basic user metadata (IP + policy if used)
-- `admin_audit`: admin login and action logs
+```http
+POST /chat?language=english|german
+Content-Type: application/json
 
-Database file: `backend/chat_data.db`
+{
+  "message": "What is the range of Tesla Model 3?"
+}
 
-## Environment Variables
-
-Create a `.env` inside `backend/` (or copy from `.env.example`):
-
-```
-OPENAI_API_KEY=your_openai_key
-OPENAI_MODEL=gpt-3.5-turbo
-ADMIN_PASSWORD=KGA!@6247#0
-VIEWER_PASSWORD=
-ADMIN_TOKEN_TTL_MINUTES=120
-CORS_ALLOW_ORIGINS=*
-ENVIRONMENT=development
-REQUEST_TIMEOUT_SECONDS=30
-RATE_LIMIT_REQUESTS=30
-RATE_LIMIT_WINDOW_SECONDS=60
+Response:
+{
+  "reply": "The Tesla Model 3 has a range of up to 565 miles...",
+  "language": "english"
+}
 ```
 
-Frontend env file (optional):
+### Admin Authentication
 
+```http
+POST /admin/login
+Content-Type: application/json
+
+{
+  "password": "admin_password"
+}
+
+Response:
+{
+  "token": "token_string",
+  "role": "admin"
+}
 ```
-VITE_API_BASE_URL=http://localhost:8000
+
+### Admin Data Access
+
+- `GET /admin/messages?page=1&page_size=50` - Retrieve paginated messages
+- `GET /admin/users` - List tracked users
+- `GET /admin/audit` - View audit logs
+- `GET /admin/export/messages` - Export as CSV
+- `GET /admin/export/messages-json` - Export as JSON
+- `GET /admin/export/users` - Export users as CSV
+- `GET /admin/export/audit` - Export audit logs as CSV
+
+## Configuration
+
+### Environment Variables
+
+Create `.env` in the `backend/` directory:
+
+```bash
+# OpenAI Configuration
+OPENAI_API_KEY=sk-...                    # Required: OpenAI API key
+OPENAI_MODEL=gpt-3.5-turbo              # LLM model selection
+
+# Authentication
+ADMIN_PASSWORD=secure_password           # Admin access password
+VIEWER_PASSWORD=viewer_password          # Read-only access password
+ADMIN_TOKEN_TTL_MINUTES=120             # Token expiration time
+
+# API Configuration
+CORS_ALLOW_ORIGINS=*                    # CORS policy
+REQUEST_TIMEOUT_SECONDS=30              # Request timeout
+ENVIRONMENT=production                   # Environment mode
+
+# Rate Limiting
+RATE_LIMIT_REQUESTS=30                  # Requests per window
+RATE_LIMIT_WINDOW_SECONDS=60            # Time window in seconds
+
+# Language Support
+SUPPORTED_LANGUAGES=english,german       # Enabled languages
+DEFAULT_LANGUAGE=english                 # Default language
 ```
 
-## Run Locally
+### Frontend Configuration
 
-### Backend
+Create `.env` in the `frontend/` directory:
 
+```bash
+VITE_API_BASE_URL=http://localhost:8000  # Backend API URL
 ```
+
+## Installation & Setup
+
+### Prerequisites
+
+- Python 3.9+
+- Node.js 16+
+- Docker & Docker Compose (optional)
+
+### Local Development Setup
+
+#### Backend Installation
+
+```bash
 cd backend
 python -m venv .venv
-.\.venv\Scripts\activate
+source .venv/bin/activate  # On Windows: .\.venv\Scripts\activate
 pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
 ```
 
-If PowerShell blocks scripts:
+#### Backend Startup
 
-```
+```bash
 cd backend
-cmd /c python -m venv .venv
-cmd /c .\.venv\Scripts\activate
-cmd /c pip install -r requirements.txt
-cmd /c uvicorn main:app --reload --port 8000
+cp .env.example .env  # Configure environment variables
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### Frontend
+The backend will be available at `http://localhost:8000` with API documentation at `http://localhost:8000/docs`.
 
-```
+#### Frontend Installation
+
+```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-If PowerShell blocks scripts:
+The frontend will be available at `http://localhost:5173`.
 
-```
-cd frontend
-cmd /c npm install
-cmd /c npm run dev
-```
+### Docker Deployment
 
-Open the app:
+#### Build Containers
 
-- Public chat: `http://localhost:5173/`
-- Admin dashboard: `http://localhost:5173/admin`
-
-## Docker
-
-### Backend
-
-```
+```bash
+# Backend
 cd backend
-docker build -t tesla-chatbot-backend .
-docker run -p 8000:8000 --env-file .env tesla-chatbot-backend
-```
+docker build -t tesla-chatbot-backend:latest .
+docker run -p 8000:8000 --env-file .env tesla-chatbot-backend:latest
 
-### Frontend
-
-```
+# Frontend
 cd frontend
-docker build -t tesla-chatbot-frontend .
-docker run -p 5173:5173 tesla-chatbot-frontend
+docker build -t tesla-chatbot-frontend:latest .
+docker run -p 5173:5173 tesla-chatbot-frontend:latest
 ```
 
-## Admin Usage
+#### Docker Compose (Optional)
 
-1. Log in with Admin password for full access.
-2. Use Viewer password for read-only access.
-3. Export chats as CSV or JSON for training.
-4. Add or replace Tesla PDFs in `backend/pdfs/` and restart the backend.
+```yaml
+version: '3.8'
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - backend/.env
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+```
 
-## Training Data Export
+## Database Schema
 
-Use the admin Messages tab to export all chats for model training:
+### messages
+```sql
+CREATE TABLE messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ip TEXT,
+  role TEXT,
+  content TEXT,
+  timestamp TEXT,
+  language TEXT
+)
+```
 
-- CSV export: `GET /admin/export/messages`
-- JSON export: `GET /admin/export/messages-json`
+### users
+```sql
+CREATE TABLE users (
+  ip TEXT PRIMARY KEY,
+  policy TEXT
+)
+```
 
-## Notes
+### admin_audit
+```sql
+CREATE TABLE admin_audit (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ip TEXT,
+  action TEXT,
+  timestamp TEXT
+)
+```
 
-- The assistant answers from Tesla documents first.
-- If Tesla PDFs do not cover a question, it responds from general Tesla knowledge and states uncertainty if needed.
-- For better accuracy, add more Tesla PDFs to `backend/pdfs/` and restart the backend.
+## Knowledge Base Management
 
-## Senior-Level Checklist Implemented
+### Adding Documents
 
-- Structured backend architecture (core/services/routes)
-- Configurable environment variables
-- Logging + health endpoint
-- Admin token-based auth
-- Rate limiting on `/chat`
-- Audit logs + export
-- Admin audit export
-- Pagination in admin UI
-- Real charts (Chart.js)
-- Docker support
-- Comprehensive documentation
+1. Place PDF files in `backend/pdfs/` directory
+2. Restart the backend service
+3. PDFs are automatically parsed and indexed at startup
+
+### Document Format Requirements
+
+- PDF format (.pdf extension)
+- Readable text extraction (not scanned images only)
+- UTF-8 compatible text encoding
+
+## Supported Languages
+
+| Language | Code | Support Level |
+|----------|------|----------------|
+| English | en | Full support |
+| German | de | Full support with automatic translation |
+
+**Note**: Voice input is limited to English only.
+
+## Troubleshooting
+
+### Backend Issues
+
+| Issue | Solution |
+|-------|----------|
+| PDF not loading | Verify PDF is in `backend/pdfs/` and is readable |
+| Rate limit errors | Check `RATE_LIMIT_REQUESTS` and `RATE_LIMIT_WINDOW_SECONDS` |
+| OpenAI API errors | Verify `OPENAI_API_KEY` is valid and has available credits |
+| Database locked | Ensure only one backend instance is running |
+
+### Frontend Issues
+
+| Issue | Solution |
+|-------|----------|
+| API connection failed | Verify backend is running and `VITE_API_BASE_URL` is correct |
+| CORS errors | Check `CORS_ALLOW_ORIGINS` includes frontend URL |
+| Voice not working | Use Chrome/Edge browser; check microphone permissions |
+
+## Performance Optimization
+
+### For Large Document Sets
+
+1. **Enable FAISS**: Install optional dependency for vector acceleration
+   ```bash
+   pip install faiss-cpu
+   ```
+
+2. **Adjust Chunk Size**: Modify `chunk_text()` parameters in `retriever.py`
+
+3. **Configure Rate Limits**: Adjust `RATE_LIMIT_REQUESTS` for your load
+
+### Recommended Production Settings
+
+- `ENVIRONMENT=production`
+- `RATE_LIMIT_REQUESTS=50` (per minute)
+- Enable FAISS for document sets > 1000 pages
+- Use external database for multi-instance deployments
+- Implement caching layer for frequently asked questions
+
+## Best Practices
+
+### Security
+
+- Never commit `.env` files with sensitive credentials
+- Rotate `ADMIN_PASSWORD` regularly
+- Use strong, unique passwords for production
+- Enable HTTPS in production environments
+- Audit logs regularly for suspicious activity
+
+### Operations
+
+- Monitor API response times and error rates
+- Export data regularly for compliance
+- Backup `chat_data.db` daily
+- Review PDF knowledge base quarterly
+- Test disaster recovery procedures
+
+## License
+
+[Insert your license information here]
+
+## Support & Contribution
+
+For issues, questions, or contributions, please contact the development team or create an issue in the repository.
+
+## Changelog
+
+### Version 1.0.0
+- Initial production release
+- Multilingual Q&A support
+- Admin dashboard with analytics
+- Complete audit logging
+- Docker deployment support
