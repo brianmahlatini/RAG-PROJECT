@@ -26,7 +26,11 @@ The application is built as two containerized services:
 
 ### Chat Response
 
-![Tesla ChatBot chat response](docs/screenshots/public-chat-response.png)
+![Tesla ChatBot hardware chat response](docs/screenshots/chat-response-hardware.png)
+
+![Tesla ChatBot battery chat response](docs/screenshots/chat-response-battery.png)
+
+![Tesla ChatBot repair chat response](docs/screenshots/chat-response-repair.png)
 
 ### Voice Listening
 
