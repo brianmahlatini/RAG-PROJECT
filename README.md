@@ -10,7 +10,9 @@ The application is built as two containerized services:
 ## Highlights
 
 - PDF-first Q&A using text extracted from `backend/pdfs/`.
-- TF-IDF retrieval pipeline with optional FAISS acceleration.
+- Persistent local vector database using normalized TF-IDF vectors and cosine similarity.
+- RAG evaluation metrics for retrieval quality: `recall@K`, `precision@K`, `MRR`, and `NDCG@K`.
+- Generation evaluation for faithfulness, correctness, context coverage, and hallucination risk.
 - English and German chat support.
 - English-only browser voice input.
 - Admin dashboard with message review, user views, analytics charts, CSV/JSON exports, and audit exports.
@@ -61,20 +63,21 @@ The application is built as two containerized services:
 | Backend | FastAPI, Uvicorn |
 | Database | SQLite |
 | LLM | OpenAI ChatCompletion API |
-| Retrieval | scikit-learn TF-IDF, optional FAISS |
+| Retrieval | Local vector database, scikit-learn TF-IDF embeddings, cosine similarity |
 | PDF Parsing | PyMuPDF |
 | Runtime | Docker |
 
 ## System Flow
 
 1. Backend starts and loads all PDFs from `backend/pdfs/`.
-2. PDF text is split into chunks and indexed with TF-IDF.
+2. PDF text is split into overlapping chunks and stored in a local vector database.
 3. A user sends a message to `POST /chat?language=english|german`.
-4. The retriever selects relevant Tesla document chunks.
+4. The retriever selects relevant Tesla document chunks using cosine similarity.
 5. The chat service builds a prompt from the retrieved context and user message.
-6. The assistant returns an answer in English, then translates to German when requested.
-7. Chat messages are stored in SQLite for admin review and exports.
-8. Admin activity is recorded in the audit log.
+6. The assistant is instructed to answer only from retrieved document evidence and to say when the document does not contain enough information.
+7. The API returns generation evaluation metadata for faithfulness, context coverage, and hallucination risk.
+8. Chat messages are stored in SQLite for admin review and exports.
+9. Admin activity is recorded in the audit log.
 
 ## Project Structure
 
@@ -94,8 +97,10 @@ backend/
       admin_auth.py          # Token issuing, validation, and role lookup
       audit.py               # Admin action logging
       chat_service.py        # Prompt construction and LLM orchestration
-      retriever.py           # TF-IDF retrieval and optional FAISS support
+      evaluation.py          # Retrieval and generation evaluation metrics
+      retriever.py           # Cosine-similarity retrieval over vector store
       translator.py          # German translation support
+      vector_store.py        # Persistent local vector database
     schemas.py               # Pydantic request models
     main.py                  # FastAPI app setup and startup hooks
   pdfs/                      # Tesla PDF knowledge base
@@ -135,6 +140,8 @@ ENVIRONMENT=development
 REQUEST_TIMEOUT_SECONDS=30
 RATE_LIMIT_REQUESTS=30
 RATE_LIMIT_WINDOW_SECONDS=60
+VECTOR_DB_PATH=vector_db/rag_vectors.pkl
+RAG_TOP_K=4
 ```
 
 Optional frontend environment:
@@ -230,6 +237,7 @@ Chat request body:
 | `GET` | `/admin/audit` | Admin | View admin audit logs |
 | `GET` | `/admin/export/audit` | Admin | Export audit logs as CSV |
 | `POST` | `/admin/fix-database` | Admin | Repair legacy message language data |
+| `POST` | `/admin/evaluate-rag` | Viewer/Admin | Evaluate retrieval and generation quality |
 
 Admin-protected requests use the issued token in the `x-admin-token` header.
 
@@ -269,7 +277,39 @@ PDF files in `backend/pdfs/` are loaded at backend startup. To update the knowle
 2. Restart the backend service.
 3. Confirm `GET /health` returns `{"status":"ok"}`.
 
-The current retriever uses TF-IDF. FAISS can be added for faster similarity search on larger document sets.
+The current retriever builds a persistent local vector database at `backend/vector_db/` by default. The vector database stores normalized TF-IDF vectors and uses cosine similarity for top-K retrieval. The generated vector database files are ignored by git because they can be rebuilt from the PDFs at startup.
+
+## RAG Evaluation
+
+The project includes both retrieval and generation evaluation support.
+
+Retrieval metrics:
+
+- `precision@K`: how many retrieved chunks in the top K are relevant.
+- `recall@K`: how many known relevant chunks were recovered in the top K.
+- `MRR`: reciprocal rank of the first relevant retrieved chunk.
+- `NDCG@K`: ranking quality that rewards relevant chunks appearing higher in the results.
+
+Generation metrics:
+
+- `faithfulness`: lexical support between the answer and retrieved context.
+- `correctness`: token F1 against an expected answer when one is provided.
+- `context_coverage`: how much retrieved context is reflected in the answer.
+- `hallucination_risk`: inverse of faithfulness, labelled as low, medium, or high.
+
+The public `POST /chat` response includes an `evaluation` object with generation scores and retrieved chunk metadata. For labelled evaluation, call `POST /admin/evaluate-rag` with an admin or viewer token:
+
+```json
+{
+  "question": "What is Tesla Autopilot?",
+  "answer": "",
+  "expected_answer": "Autopilot is Tesla driver assistance technology.",
+  "relevant_chunk_ids": ["chunk-00012-abcd1234ef567890"],
+  "k": 5
+}
+```
+
+When `answer` is empty, the endpoint generates an answer from the retrieved chunks before scoring it. Supplying `relevant_chunk_ids` enables `precision@K`, `recall@K`, `MRR`, and `NDCG@K`; supplying `expected_answer` enables correctness scoring.
 
 ## Security Notes
 
@@ -295,7 +335,7 @@ The current retriever uses TF-IDF. FAISS can be added for faster similarity sear
 
 ## Future Improvements
 
-- Replace or supplement TF-IDF with a vector database.
+- Add a larger labelled evaluation set for repeatable RAG benchmarking.
 - Add streaming responses for lower perceived latency.
 - Move admin token storage to a persistent session store.
 - Add automated backend and frontend tests.

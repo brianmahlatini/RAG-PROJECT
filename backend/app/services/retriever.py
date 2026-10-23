@@ -4,17 +4,16 @@
 # Purpose: Lightweight retrieval over Tesla docs.
 # Overview:
 # - Splits text into chunks
-# - Uses TF-IDF (optional) for matching
+# - Stores normalized TF-IDF vectors in a local vector database
+# - Uses cosine similarity for matching
 # - Returns top relevant chunks
 from typing import List, Tuple
 
-# NOTE: Imports are intentionally lazy to avoid hard failures
-# if optional deps (numpy / sklearn / faiss) are missing.
-faiss = None
-try:
-    import faiss  # type: ignore
-except Exception:
-    faiss = None
+from app.services.vector_store import (
+    SearchResult,
+    corpus_fingerprint,
+    load_or_build_vector_store,
+)
 
 
 def chunk_text(
@@ -30,31 +29,67 @@ def chunk_text(
         chunk = cleaned[start:end].strip()
         if chunk:
             chunks.append(chunk)
-        start = max(end - overlap, end)
+        if end >= len(cleaned):
+            break
+        start = max(end - overlap, start + 1)
     return chunks
 
 
-def build_retriever(text: str) -> Tuple[List[str], object, object, object]:
+def build_retriever(
+    text: str, vector_db_path: str = "vector_db/rag_vectors.pkl"
+) -> Tuple[List[str], object, object, object]:
     try:
-        import numpy as np  # type: ignore
-        from sklearn.feature_extraction.text import (  # type: ignore
-            TfidfVectorizer,
-        )
+        import numpy as np  # type: ignore # noqa: F401
     except Exception:
         # Missing optional dependencies; return empty retriever
         return [], None, None, None
     chunks = chunk_text(text)
-    vectorizer = TfidfVectorizer(stop_words="english")
     if not chunks:
-        return [], vectorizer, np.zeros((0, 0)), None
-    matrix = vectorizer.fit_transform(chunks).astype(np.float32)
-    index = None
-    if faiss is not None:
-        dense = matrix.toarray()
-        index = faiss.IndexFlatIP(dense.shape[1])
-        faiss.normalize_L2(dense)
-        index.add(dense)
-    return chunks, vectorizer, matrix, index
+        return [], None, None, None
+    fingerprint = corpus_fingerprint(text)
+    vector_store = load_or_build_vector_store(
+        text, chunks, vector_db_path, fingerprint
+    )
+    return chunks, vector_store.vectorizer, vector_store.matrix, vector_store
+
+
+def retrieve_results(
+    query: str,
+    chunks: List[str],
+    vectorizer,
+    matrix,
+    vector_store,
+    top_k: int = 4,
+) -> List[SearchResult]:
+    if not query or not chunks:
+        return []
+    if vector_store is not None and hasattr(vector_store, "search"):
+        return vector_store.search(query, top_k=top_k)
+
+    if not vectorizer or matrix is None:
+        return []
+
+    from sklearn.preprocessing import normalize  # type: ignore
+
+    query_vec = vectorizer.transform([query]).astype("float32")
+    query_vec = normalize(query_vec, norm="l2", copy=False)
+    scores = (matrix * query_vec.T).toarray().ravel()
+    top_indices = scores.argsort()[-top_k:][::-1]
+
+    results: List[SearchResult] = []
+    for rank, idx in enumerate(top_indices, start=1):
+        score = float(scores[idx])
+        if score <= 0:
+            continue
+        results.append(
+            SearchResult(
+                chunk_id=f"chunk-{idx + 1:05d}",
+                text=chunks[idx],
+                score=score,
+                rank=rank,
+            )
+        )
+    return results
 
 
 def retrieve_chunks(
@@ -62,23 +97,12 @@ def retrieve_chunks(
     chunks: List[str],
     vectorizer,
     matrix,
-    index,
+    vector_store,
     top_k: int = 4,
 ) -> List[str]:
-    if not query or not chunks:
-        return []
-    if not vectorizer or matrix is None:
-        return []
-    try:
-        import numpy as np  # type: ignore
-    except Exception:
-        return []
-    query_vec = vectorizer.transform([query]).astype(np.float32)
-    if index is not None and faiss is not None:
-        dense = query_vec.toarray()
-        faiss.normalize_L2(dense)
-        scores, indices = index.search(dense, top_k)
-        return [chunks[i] for i in indices[0] if i != -1]
-    scores = (matrix * query_vec.T).toarray().ravel()
-    top_indices = scores.argsort()[-top_k:][::-1]
-    return [chunks[i] for i in top_indices if scores[i] > 0]
+    return [
+        result.text
+        for result in retrieve_results(
+            query, chunks, vectorizer, matrix, vector_store, top_k
+        )
+    ]

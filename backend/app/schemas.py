@@ -5,7 +5,7 @@
 # Overview:
 # - Message payload for chat
 # - Admin login payload
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class MessageIn(BaseModel):
@@ -19,3 +19,11 @@ class AdminLogin(BaseModel):
 class Pagination(BaseModel):
     page: int = 1
     page_size: int = 50
+
+
+class RAGEvaluationRequest(BaseModel):
+    question: str
+    answer: str = ""
+    expected_answer: str = ""
+    relevant_chunk_ids: list[str] = Field(default_factory=list)
+    k: int = 5

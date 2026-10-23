@@ -16,6 +16,7 @@ from app.core.config import (
     OPENAI_API_KEY,
     PDF_FOLDER,
     PROJECT_NAME,
+    VECTOR_DB_PATH,
 )
 from app.core.database import init_db
 from app.core.logging_config import configure_logging
@@ -45,7 +46,9 @@ def startup():
     # Initialize SQLite tables and cache PDF text once at startup
     init_db()
     app.state.pdf_text = load_pdf_text(PDF_FOLDER)
-    chunks, vectorizer, matrix, index = build_retriever(app.state.pdf_text)
+    chunks, vectorizer, matrix, index = build_retriever(
+        app.state.pdf_text, VECTOR_DB_PATH
+    )
     app.state.retriever = {
         "chunks": chunks,
         "vectorizer": vectorizer,

@@ -18,6 +18,8 @@ PROJECT_NAME = "Tesla ChatBot API"
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 
 PDF_FOLDER = "pdfs"
+VECTOR_DB_PATH = os.getenv("VECTOR_DB_PATH", "vector_db/rag_vectors.pkl")
+RAG_TOP_K = int(os.getenv("RAG_TOP_K", "4"))
 
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "KGA!@6247#0")
 VIEWER_PASSWORD = os.getenv("VIEWER_PASSWORD", "")

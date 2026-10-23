@@ -17,16 +17,23 @@ from fastapi.responses import FileResponse  # type: ignore # noqa: F401
 from app.core.config import (
     ADMIN_PASSWORD,
     DEFAULT_LANGUAGE,
+    RAG_TOP_K,
     VIEWER_PASSWORD,
 )  # type: ignore # noqa: F401
 from app.core.database import get_db  # type: ignore # noqa: F401
-from app.schemas import AdminLogin  # type: ignore # noqa: F401
+from app.schemas import (  # type: ignore # noqa: F401
+    AdminLogin,
+    RAGEvaluationRequest,
+)
 from app.services.admin_auth import (
     issue_token,
     is_token_valid,
     get_role,
 )  # type: ignore # noqa: F401
 from app.services.audit import log_admin_action  # type: ignore
+from app.services.chat_service import handle_chat
+from app.services.evaluation import evaluate_rag_response
+from app.services.retriever import retrieve_results
 # noqa: F401
 
 router = APIRouter(prefix="/admin")
@@ -216,6 +223,48 @@ def debug_last_messages(request: Request, limit: int = 10):
             }
         )
     return result
+
+
+@router.post("/evaluate-rag")
+def evaluate_rag(request: Request, payload: RAGEvaluationRequest):
+    require_viewer(request)
+    question = payload.question.strip()
+    if not question:
+        raise HTTPException(status_code=400, detail="Question is required")
+
+    top_k = max(1, min(payload.k or RAG_TOP_K, 20))
+    retriever = request.app.state.retriever
+    retrieved_results = retrieve_results(
+        question,
+        retriever["chunks"],
+        retriever["vectorizer"],
+        retriever["matrix"],
+        retriever["index"],
+        top_k=top_k,
+    )
+
+    answer = payload.answer.strip()
+    if not answer:
+        answer, _language = handle_chat(
+            question,
+            DEFAULT_LANGUAGE,
+            request.app.state.pdf_text,
+            [result.text for result in retrieved_results],
+        )
+
+    expected_answer = payload.expected_answer.strip() or None
+    relevant_ids = payload.relevant_chunk_ids or None
+    return {
+        "question": question,
+        "answer": answer,
+        "evaluation": evaluate_rag_response(
+            answer,
+            retrieved_results,
+            relevant_ids=relevant_ids,
+            expected_answer=expected_answer,
+            k=top_k,
+        ),
+    }
 
 
 @router.post("/fix-database")

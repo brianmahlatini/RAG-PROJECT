@@ -10,7 +10,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, Query, Request
 
-from app.core.config import DEFAULT_LANGUAGE
+from app.core.config import DEFAULT_LANGUAGE, RAG_TOP_K
 from app.core.database import get_db
 from app.schemas import MessageIn
 from app.services.chat_service import (
@@ -18,7 +18,8 @@ from app.services.chat_service import (
     log_message,
     normalize_language,
 )
-from app.services.retriever import retrieve_chunks
+from app.services.evaluation import evaluate_rag_response
+from app.services.retriever import retrieve_results
 
 router = APIRouter()
 
@@ -55,20 +56,22 @@ async def chat(
         # Use cached PDF corpus loaded at startup
         pdf_text = request.app.state.pdf_text
         retriever = request.app.state.retriever
-        retrieved_chunks = retrieve_chunks(
+        retrieved_results = retrieve_results(
             prompt,
             retriever["chunks"],
             retriever["vectorizer"],
             retriever["matrix"],
             retriever["index"],
-            top_k=4,
+            top_k=RAG_TOP_K,
         )
+        retrieved_chunks = [result.text for result in retrieved_results]
         (
             reply,
             selected_language,
         ) = handle_chat(
             prompt, selected_language, pdf_text, retrieved_chunks
         )
+        evaluation = evaluate_rag_response(reply, retrieved_results, k=RAG_TOP_K)
 
         log_message(
             cursor,
@@ -82,6 +85,7 @@ async def chat(
     except Exception as exc:
         print(f"Error in chat processing: {exc}")
         reply = "Sorry, something went wrong. Please try again."
+        evaluation = {}
         try:
             log_message(
                 cursor,
@@ -95,4 +99,8 @@ async def chat(
         except Exception:
             pass
 
-    return {"reply": reply, "language": selected_language}
+    return {
+        "reply": reply,
+        "language": selected_language,
+        "evaluation": evaluation,
+    }
